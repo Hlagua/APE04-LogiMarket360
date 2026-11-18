@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Casos de uso: solo depende de Domain. Sin EF, SQLite ni WinForms. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\LogiMarket.Domain\LogiMarket.Domain.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="LogiMarket.Tests" />
+  </ItemGroup>
+</Project>

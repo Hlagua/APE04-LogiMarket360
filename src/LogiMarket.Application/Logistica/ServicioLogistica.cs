@@ -1,0 +1,106 @@
+using LogiMarket.Application.Comun;
+using LogiMarket.Application.Entrega;
+using LogiMarket.Application.Eventos;
+using LogiMarket.Application.Metricas;
+using LogiMarket.Application.Puertos;
+using LogiMarket.Application.Seguridad;
+using LogiMarket.Domain.Eventos;
+using LogiMarket.Domain.Logistica;
+
+namespace LogiMarket.Application.Logistica;
+
+/// <summary>Despacho (guía con la familia del Abstract Factory), entrega y seguimiento.</summary>
+public sealed class ServicioLogistica
+{
+    private readonly IPedidoRepositorio _pedidos;
+    private readonly IDespachoRepositorio _despachos;
+    private readonly IOutboxRepositorio _outbox;
+    private readonly IAuditoriaRepositorio _auditoria;
+    private readonly IUnidadDeTrabajo _uow;
+    private readonly IServicioAutorizacion _autorizacion;
+    private readonly ISesionActual _sesion;
+    private readonly ProveedorFabricasEntrega _fabricas;
+    private readonly ProcesadorOutbox _procesadorOutbox;
+    private readonly MetricasSesion _metricas;
+    private readonly IReloj _reloj;
+
+    public ServicioLogistica(IPedidoRepositorio pedidos, IDespachoRepositorio despachos, IOutboxRepositorio outbox,
+        IAuditoriaRepositorio auditoria, IUnidadDeTrabajo uow, IServicioAutorizacion autorizacion, ISesionActual sesion,
+        ProveedorFabricasEntrega fabricas, ProcesadorOutbox procesadorOutbox, MetricasSesion metricas, IReloj reloj)
+    {
+        _pedidos = pedidos;
+        _despachos = despachos;
+        _outbox = outbox;
+        _auditoria = auditoria;
+        _uow = uow;
+        _autorizacion = autorizacion;
+        _sesion = sesion;
+        _fabricas = fabricas;
+        _procesadorOutbox = procesadorOutbox;
+        _metricas = metricas;
+        _reloj = reloj;
+    }
+
+    public async Task<ResultadoOperacion<string>> DespacharAsync(int pedidoId, CancellationToken ct = default)
+    {
+        _autorizacion.Exigir(Operacion.Despachar);
+        var guia = await _uow.EnTransaccionAsync(async c =>
+        {
+            var ahora = _reloj.Ahora;
+            var pedido = await _pedidos.ObtenerAsync(pedidoId, c)
+                         ?? throw new ExcepcionAplicacion("PEDIDO_NO_EXISTE", $"No existe el pedido {pedidoId}.");
+
+            // Abstract Factory: plazo y guía de la MISMA familia que el pedido.
+            var fabrica = _fabricas.Para(pedido.TipoEntrega);
+            var plazo = fabrica.CrearCalculadoraPlazo();
+            var guiaEnvio = fabrica.CrearGeneradorGuia().Generar(pedido.Id, pedido.ClienteNombre, pedido.PesoKg, ahora, plazo);
+
+            pedido.Despachar(ahora, _sesion.NombreUsuario, guiaEnvio.Numero); // State: solo desde PAGADO
+            _despachos.Agregar(new Despacho(pedido.Id, guiaEnvio.Numero, guiaEnvio.Familia, guiaEnvio.PlazoDias,
+                guiaEnvio.Etiqueta, ahora, guiaEnvio.FechaEstimada, _sesion.NombreUsuario));
+            _outbox.Agregar(SerializadorEventos.AOutbox(new DespachoRegistrado(pedido.Id, pedido.ClienteNombre,
+                pedido.ClienteEmail, pedido.ClienteTelefono, ahora, guiaEnvio.Numero, guiaEnvio.Familia)));
+            _auditoria.Agregar(new Auditoria(ahora, _sesion.NombreUsuario, "NEGOCIO", "PEDIDO_DESPACHADO",
+                $"{pedido.Numero} guía {guiaEnvio.Numero} ({guiaEnvio.Familia}, {guiaEnvio.PlazoDias} días)"));
+            await _uow.GuardarCambiosAsync(c);
+            return guiaEnvio;
+        }, ct);
+
+        _metricas.RegistrarDespacho();
+        await _procesadorOutbox.ProcesarSinPropagarAsync(ct);
+        return ResultadoOperacion<string>.Ok(guia.Numero, $"Pedido despachado. Guía {guia.Numero}. {guia.Etiqueta}");
+    }
+
+    public async Task<ResultadoOperacion> EntregarAsync(int pedidoId, CancellationToken ct = default)
+    {
+        _autorizacion.Exigir(Operacion.Entregar);
+        await _uow.EnTransaccionAsync(async c =>
+        {
+            var ahora = _reloj.Ahora;
+            var pedido = await _pedidos.ObtenerAsync(pedidoId, c)
+                         ?? throw new ExcepcionAplicacion("PEDIDO_NO_EXISTE", $"No existe el pedido {pedidoId}.");
+            pedido.Entregar(ahora, _sesion.NombreUsuario); // State: solo desde DESPACHADO
+            var despacho = await _despachos.ObtenerPorPedidoAsync(pedidoId, c)
+                           ?? throw new ExcepcionAplicacion("SIN_DESPACHO", "El pedido no tiene despacho registrado.");
+            despacho.RegistrarEntrega(ahora);
+            _auditoria.Agregar(new Auditoria(ahora, _sesion.NombreUsuario, "NEGOCIO", "PEDIDO_ENTREGADO",
+                $"{pedido.Numero} guía {despacho.NumeroGuia}"));
+            await _uow.GuardarCambiosAsync(c);
+            return true;
+        }, ct);
+        _metricas.RegistrarEntrega();
+        return ResultadoOperacion.Ok($"Pedido {pedidoId} entregado.");
+    }
+
+    public async Task<string> SeguimientoAsync(string guiaOPedido, CancellationToken ct = default)
+    {
+        _autorizacion.Exigir(Operacion.ConsultarInformacion);
+        var texto = guiaOPedido.Trim();
+        var despacho = int.TryParse(texto.Replace("PED-", "", StringComparison.OrdinalIgnoreCase), out var id)
+            ? await _despachos.ObtenerPorPedidoAsync(id, ct)
+            : await _despachos.ObtenerPorGuiaAsync(texto.ToUpperInvariant(), ct);
+        return despacho is null
+            ? $"No se encontró seguimiento para '{texto}'."
+            : $"Guía {despacho.NumeroGuia} (PED-{despacho.PedidoId:000000}): {despacho.EstadoSeguimiento}";
+    }
+}
