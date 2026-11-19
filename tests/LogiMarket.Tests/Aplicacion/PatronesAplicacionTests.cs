@@ -130,7 +130,7 @@ public class PatronesAplicacionTests
     };
 
     private static PedidoResumenDto Resumen(int id, string cliente, string estado, decimal total) =>
-        new(id, $"PED-{id}", id, cliente, "NORMAL", estado, "ESTANDAR", total, 0, "NORMAL", 0, total, DateTime.Now, null, false, 1);
+        new(id, $"PED-{id}", id, cliente, "NORMAL", estado, "ESTANDAR", total, 0, "NORMAL", 0, total, DateTime.Now, null, false, 1, total);
 
     private static int[] Filtrar(string filtro) =>
         PedidosFiltro.Where(AnalizadorFiltro.Analizar(filtro).Interpretar).Select(p => p.Id).ToArray();
@@ -156,6 +156,7 @@ public class PatronesAplicacionTests
         Assert.Throws<ExcepcionSintaxisFiltro>(() => AnalizadorFiltro.Analizar("TOTAL >= abc"));
         Assert.Throws<ExcepcionSintaxisFiltro>(() => AnalizadorFiltro.Analizar("ESTADO >= PAGADO"));
         Assert.Throws<ExcepcionSintaxisFiltro>(() => AnalizadorFiltro.Analizar("ESTADO = INEXISTENTE"));
+        Assert.Throws<ExcepcionSintaxisFiltro>(() => AnalizadorFiltro.Analizar("ESTADO = 999")); // número no es un estado
         var inyeccion = Assert.Throws<ExcepcionSintaxisFiltro>(() => AnalizadorFiltro.Analizar("CLIENTE = x; DROP TABLE Pedido"));
         Assert.Contains("inesperado", inyeccion.Message);
     }
@@ -320,6 +321,16 @@ public class PatronesAplicacionTests
         var foto = vistaB.Instantanea();
         Assert.Equal((1000, 500), (foto.Notificaciones, foto.Despachos));
         Assert.Equal(vistaA.InstanciaId, foto.InstanciaId);
+
+        // Eventos con id de Outbox se cuentan una vez; los que no tienen id (solo memoria) siempre.
+        var avisos = 0;
+        vistaA.Cambiaron += _ => avisos++;
+        Assert.True(vistaA.RegistrarEventoProcesado(7));
+        Assert.False(vistaA.RegistrarEventoProcesado(7));
+        Assert.True(vistaA.RegistrarEventoProcesado(0));
+        Assert.True(vistaA.RegistrarEventoProcesado(0));
+        Assert.Equal(3, vistaA.Instantanea().EventosProcesados);
+        Assert.Equal(3, avisos); // el reintento duplicado no notifica
     }
 
     [Fact(DisplayName = "P38 ISP/DIP: interfaces pequeñas y Application/Domain sin dependencias de infraestructura")]

@@ -35,6 +35,10 @@ de base no existe, lo crea desde cero (no hace falta editar tablas a mano). Ubic
 `src/LogiMarket.WinForms/bin/<Config>/net8.0-windows/datos/logimarket.db` (se puede cambiar con la variable de
 entorno `LOGIMARKET_DB`). Comprobantes TXT y avisos simulados: carpeta `salidas/`; bitácora técnica: `logs/`.
 
+Configuración opcional: copie `appsettings.ejemplo.json` (junto al ejecutable) como `appsettings.json` y cambie
+`RutaBaseDatos`, `CarpetaSalidas` o `CarpetaLogs`. Las rutas relativas parten de la carpeta del ejecutable. Prioridad:
+`LOGIMARKET_DB` → `appsettings.json` → valores por defecto. El archivo no lleva credenciales.
+
 Aplicar las migraciones manualmente (opcional):
 
 ```powershell
@@ -83,7 +87,8 @@ cada cambio queda en la bitácora (categoría DEMO).
 ./scripts/empaquetar.ps1 -Nombre "APELLIDOS_NOMBRES"
 ```
 
-Genera `APE04_LogiMarket360_<Nombre>.zip` sin `bin/`, `obj/`, `.vs/`, bases `.db`, `logs/` ni `salidas/`.
+Genera `APE04_LogiMarket360_<Nombre>.zip` sin `bin/`, `obj/`, `.vs/`, bases `.db`, `logs/`, `salidas/`, el enunciado
+(`GUIA_APE_04.docx`), `CLAUDE.md` ni un `appsettings.json` local.
 
 ## Documentación técnica
 

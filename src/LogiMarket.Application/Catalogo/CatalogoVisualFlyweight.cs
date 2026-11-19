@@ -61,8 +61,8 @@ public sealed record MedicionFlyweight(int Filas, int SkusDistintos, int Instanc
 
 /// <summary>
 /// Genera la vista masiva (≥1.000 filas) y mide bajo condiciones EQUIVALENTES: mismos datos de origen,
-/// mismo número de filas, mismas copias de cadenas simulando la lectura desde la base, medido con
-/// GC.GetAllocatedBytesForCurrentThread en el mismo hilo.
+/// mismo número de filas, mismas copias de cadenas simulando la lectura desde la base. Se compara la memoria
+/// RETENIDA con GC.GetTotalMemory(true) (recolección completa antes y después de cada escenario).
 /// </summary>
 public sealed class GeneradorVistaMasiva
 {

@@ -10,7 +10,7 @@ public sealed record ClienteDto(int Id, string Identificacion, string Nombre, st
 
 public sealed record PedidoResumenDto(int Id, string Numero, int ClienteId, string Cliente, string Categoria,
     string Estado, string Entrega, decimal Subtotal, decimal Descuento, string Politica, decimal Tarifa,
-    decimal Total, DateTime FechaCreacion, DateTime? FechaEntrega, bool Devuelto, int Unidades);
+    decimal Total, DateTime FechaCreacion, DateTime? FechaEntrega, bool Devuelto, int Unidades, decimal ImporteReembolsable);
 
 public sealed record LineaPedidoDto(string Codigo, string Descripcion, bool EsKit, int Cantidad,
     decimal PrecioUnitario, decimal Subtotal, string Composicion);

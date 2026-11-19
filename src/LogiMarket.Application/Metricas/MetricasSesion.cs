@@ -31,27 +31,37 @@ public sealed class MetricasSesion
     public void RegistrarDenegacion() => Modificar(() => _denegadas++);
 
     /// <summary>Cuenta un evento de Outbox una sola vez aunque se reintente su publicación.</summary>
-    public bool RegistrarEventoProcesado(int eventoId)
-    {
-        var nuevo = false;
+    /// <remarks>Un evento sin id de Outbox (publicado solo en memoria) no se puede deduplicar: se cuenta siempre.</remarks>
+    public bool RegistrarEventoProcesado(int eventoId) =>
         Modificar(() =>
         {
-            nuevo = _eventosContados.Add(eventoId);
+            var nuevo = eventoId <= 0 || _eventosContados.Add(eventoId);
             if (nuevo) _eventos++;
+            return nuevo;
         });
-        return nuevo;
-    }
 
     public InstantaneaMetricas Instantanea()
     {
-        lock (_candado)
-            return new InstantaneaMetricas(InstanciaId, Inicio, _confirmados, _rechazados, _repetidas, _despachos,
-                _entregas, _devoluciones, _notificaciones, _eventos, _denegadas, _monto);
+        lock (_candado) return InstantaneaSinBloqueo();
     }
 
-    private void Modificar(Action accion)
+    private InstantaneaMetricas InstantaneaSinBloqueo() =>
+        new(InstanciaId, Inicio, _confirmados, _rechazados, _repetidas, _despachos,
+            _entregas, _devoluciones, _notificaciones, _eventos, _denegadas, _monto);
+
+    private void Modificar(Action accion) => Modificar(() => { accion(); return true; });
+
+    /// <summary>Aplica el cambio y toma la instantánea en un solo bloqueo; avisa solo si algo cambió.</summary>
+    private bool Modificar(Func<bool> accion)
     {
-        lock (_candado) accion();
-        Cambiaron?.Invoke(Instantanea());
+        bool cambio;
+        InstantaneaMetricas foto;
+        lock (_candado)
+        {
+            cambio = accion();
+            foto = InstantaneaSinBloqueo();
+        }
+        if (cambio) Cambiaron?.Invoke(foto);
+        return cambio;
     }
 }

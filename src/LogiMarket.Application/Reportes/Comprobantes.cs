@@ -19,22 +19,10 @@ public abstract class Comprobante
 
     protected abstract void EscribirCuerpo(StringBuilder sb);
 
-    public string GenerarContenido()
-    {
-        // Importes siempre con punto decimal y dos decimales, independientemente de la cultura del equipo.
-        var cultura = System.Globalization.CultureInfo.CurrentCulture;
-        System.Globalization.CultureInfo.CurrentCulture = System.Globalization.CultureInfo.InvariantCulture;
-        try
-        {
-            return Construir();
-        }
-        finally
-        {
-            System.Globalization.CultureInfo.CurrentCulture = cultura;
-        }
-    }
+    /// <summary>Importes con punto decimal y dos decimales, sin depender de la cultura del equipo.</summary>
+    protected static readonly System.Globalization.CultureInfo Inv = System.Globalization.CultureInfo.InvariantCulture;
 
-    private string Construir()
+    public string GenerarContenido()
     {
         var sb = new StringBuilder();
         sb.AppendLine("LOGIMARKET 360 - COMPROBANTE INTERNO DE DEMOSTRACIÓN");
@@ -61,22 +49,22 @@ public sealed class ComprobanteVenta : Comprobante
     protected override void EscribirCuerpo(StringBuilder sb)
     {
         var r = _pedido.Resumen;
-        sb.AppendLine($"Cliente: {r.Cliente} ({r.Categoria})    Estado: {r.Estado}");
-        sb.AppendLine($"Fecha: {r.FechaCreacion:yyyy-MM-dd HH:mm}    Entrega: {r.Entrega}");
+        sb.AppendLine(Inv, $"Cliente: {r.Cliente} ({r.Categoria})    Estado: {r.Estado}");
+        sb.AppendLine(Inv, $"Fecha: {r.FechaCreacion:yyyy-MM-dd HH:mm}    Entrega: {r.Entrega}");
         sb.AppendLine();
-        sb.AppendLine($"{"Código",-16}{"Cant",6}{"P.Unit",10}{"Subtotal",11}");
+        sb.AppendLine(Inv, $"{"Código",-16}{"Cant",6}{"P.Unit",10}{"Subtotal",11}");
         foreach (var l in _pedido.Lineas)
         {
-            sb.AppendLine($"{l.Codigo,-16}{l.Cantidad,6}{l.PrecioUnitario,10:0.00}{l.Subtotal,11:0.00}");
-            if (l.EsKit) sb.AppendLine($"   Composición: {l.Composicion}");
+            sb.AppendLine(Inv, $"{l.Codigo,-16}{l.Cantidad,6}{l.PrecioUnitario,10:0.00}{l.Subtotal,11:0.00}");
+            if (l.EsKit) sb.AppendLine(Inv, $"   Composición: {l.Composicion}");
         }
         sb.AppendLine();
-        sb.AppendLine($"Subtotal:            {r.Subtotal,10:0.00}");
-        sb.AppendLine($"Descuento ({r.Politica}): {r.Descuento,10:0.00}");
-        sb.AppendLine($"Envío ({r.Entrega}):   {r.Tarifa,10:0.00}");
-        sb.AppendLine($"TOTAL USD:           {r.Total,10:0.00}");
+        sb.AppendLine(Inv, $"Subtotal:            {r.Subtotal,10:0.00}");
+        sb.AppendLine(Inv, $"Descuento ({r.Politica}): {r.Descuento,10:0.00}");
+        sb.AppendLine(Inv, $"Envío ({r.Entrega}):   {r.Tarifa,10:0.00}");
+        sb.AppendLine(Inv, $"TOTAL USD:           {r.Total,10:0.00}");
         if (_pedido.Pago is not null)
-            sb.AppendLine($"Pago: ref {_pedido.Pago.Referencia} ({_pedido.Pago.Proveedor}) {_pedido.Pago.Fecha:yyyy-MM-dd HH:mm}");
+            sb.AppendLine(Inv, $"Pago: ref {_pedido.Pago.Referencia} ({_pedido.Pago.Proveedor}) {_pedido.Pago.Fecha:yyyy-MM-dd HH:mm}");
     }
 }
 
@@ -96,13 +84,13 @@ public sealed class ComprobanteDevolucion : Comprobante
     {
         var d = _pedido.Devolucion!;
         var r = _pedido.Resumen;
-        sb.AppendLine($"Cliente: {r.Cliente}");
-        sb.AppendLine($"Motivo: {d.Motivo}    Días desde la entrega: {d.Dias}");
-        sb.AppendLine($"Fecha de solicitud: {d.FechaSolicitud:yyyy-MM-dd HH:mm}");
-        sb.AppendLine($"Total pagado: {r.Total:0.00}  (tarifa de envío {r.Tarifa:0.00} NO reembolsable)");
-        sb.AppendLine($"REEMBOLSO USD: {d.MontoReembolso:0.00}    Ref: {d.ReferenciaReembolso}");
-        sb.AppendLine($"Stock reintegrado: {(d.StockReintegrado ? "Sí" : "No")}");
-        foreach (var l in _pedido.Lineas) sb.AppendLine($"  {l.Codigo} x{l.Cantidad}");
-        if (!string.IsNullOrWhiteSpace(d.Observacion)) sb.AppendLine($"Observación: {d.Observacion}");
+        sb.AppendLine(Inv, $"Cliente: {r.Cliente}");
+        sb.AppendLine(Inv, $"Motivo: {d.Motivo}    Días desde la entrega: {d.Dias}");
+        sb.AppendLine(Inv, $"Fecha de solicitud: {d.FechaSolicitud:yyyy-MM-dd HH:mm}");
+        sb.AppendLine(Inv, $"Total pagado: {r.Total:0.00}  (tarifa de envío {r.Tarifa:0.00} NO reembolsable)");
+        sb.AppendLine(Inv, $"REEMBOLSO USD: {d.MontoReembolso:0.00}    Ref: {d.ReferenciaReembolso}");
+        sb.AppendLine(Inv, $"Stock reintegrado: {(d.StockReintegrado ? "Sí" : "No")}");
+        foreach (var l in _pedido.Lineas) sb.AppendLine(Inv, $"  {l.Codigo} x{l.Cantidad}");
+        if (!string.IsNullOrWhiteSpace(d.Observacion)) sb.AppendLine(Inv, $"Observación: {d.Observacion}");
     }
 }

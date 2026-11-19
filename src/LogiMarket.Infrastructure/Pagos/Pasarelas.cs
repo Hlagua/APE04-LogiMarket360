@@ -52,7 +52,7 @@ public sealed class PasarelaModernaSimulada : IPasarelaPago
     public async Task<ResultadoCobro> CobrarAsync(decimal monto, string claveIdempotencia, CancellationToken ct = default)
     {
         PasarelaLegadaAdapter.ValidarEntrada(monto, claveIdempotencia);
-        _bitacora.Registrar("PAGO", $"PASARELA MODERNA charge(amount={monto:0.00}, idempotencyKey={claveIdempotencia})");
+        _bitacora.Registrar("PAGO", $"PASARELA MODERNA charge(amount={Dinero.Formatear(monto)}, idempotencyKey={claveIdempotencia})");
         await Task.Yield();
         if (_demo.ForzarErrorPasarela) throw new TimeoutException("La pasarela moderna no respondió (simulado).");
         if (_demo.ForzarRechazoCobro || monto > 10_000m)
@@ -88,7 +88,7 @@ public sealed class ServicioReembolsoSimulado : IServicioReembolso
     public Task<string> ReembolsarAsync(int pedidoId, decimal monto, string referenciaPago, CancellationToken ct = default)
     {
         var referencia = $"RMB-{pedidoId:000000}-{Guid.NewGuid():N}"[..24];
-        _bitacora.Registrar("REEMBOLSO", $"Reembolso simulado {referencia} de USD {monto:0.00} sobre pago {referenciaPago}");
+        _bitacora.Registrar("REEMBOLSO", $"Reembolso simulado {referencia} de USD {Dinero.Formatear(monto)} sobre pago {referenciaPago}");
         return Task.FromResult(referencia);
     }
 }

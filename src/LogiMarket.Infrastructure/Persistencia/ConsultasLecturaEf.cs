@@ -49,7 +49,7 @@ public sealed class ConsultasLecturaEf : IConsultasLectura
     private static PedidoResumenDto Resumen(Pedido p) =>
         new(p.Id, p.Numero, p.ClienteId, p.ClienteNombre, p.CategoriaCliente.ToString(), p.Estado.ToString(), p.TipoEntrega.ToString(),
             p.Subtotal, p.Descuento, p.PoliticaDescuento, p.TarifaEnvio, p.Total, p.FechaCreacion, p.FechaEntrega, p.Devuelto,
-            p.UnidadesFisicas);
+            p.UnidadesFisicas, p.ImporteReembolsable);
 
     public async Task<PedidoCompletoDto?> PedidoAsync(int id, CancellationToken ct = default)
     {

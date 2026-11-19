@@ -101,7 +101,9 @@ public sealed class VistaCatalogo : VistaBase
         var (_, r) = await Ejecutor.Ejecutar(sp => nuevo
             ? sp.GetRequiredService<ServicioCatalogo>().CrearProductoAsync(datos)
             : sp.GetRequiredService<ServicioCatalogo>().ActualizarProductoAsync(datos));
-        if (Ejecutor.Mostrar(r)) await NotificarAsync(EventoVista.CatalogoCambiado);
+        if (!Ejecutor.Mostrar(r)) return;
+        await RefrescarAsync(); // el Mediator no refresca al emisor: la vista se actualiza a sí misma
+        await NotificarAsync(EventoVista.CatalogoCambiado);
     }
 
     private async Task AlternarActivoAsync()
@@ -109,7 +111,9 @@ public sealed class VistaCatalogo : VistaBase
         if (Ui.Seleccionado<ProductoDto>(_productos) is not { } p) return;
         if (!Ui.Confirmar($"¿{(p.Activo ? "Desactivar" : "Activar")} el producto {p.Sku}?")) return;
         var (_, r) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<ServicioCatalogo>().CambiarEstadoProductoAsync(p.Sku, !p.Activo));
-        if (Ejecutor.Mostrar(r)) await NotificarAsync(EventoVista.CatalogoCambiado);
+        if (!Ejecutor.Mostrar(r)) return;
+        await RefrescarAsync(); // el Mediator no refresca al emisor: la vista se actualiza a sí misma
+        await NotificarAsync(EventoVista.CatalogoCambiado);
     }
 
     /// <summary>Interpreta "P01x1, KIT_OFICINA x2" como lista de componentes.</summary>
@@ -132,7 +136,9 @@ public sealed class VistaCatalogo : VistaBase
         if (!Validar(_kitCodigo, _kitCodigo.Text.Trim().Length > 0, "Código obligatorio") ||
             !Validar(_kitNombre, _kitNombre.Text.Trim().Length > 0, "Nombre obligatorio") || !LeerComponentes(out var comps)) return;
         var (_, r) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<ServicioCatalogo>().CrearKitAsync(_kitCodigo.Text, _kitNombre.Text, comps));
-        if (Ejecutor.Mostrar(r)) await NotificarAsync(EventoVista.CatalogoCambiado);
+        if (!Ejecutor.Mostrar(r)) return;
+        await RefrescarAsync(); // el Mediator no refresca al emisor: la vista se actualiza a sí misma
+        await NotificarAsync(EventoVista.CatalogoCambiado);
     }
 
     private string? KitSeleccionado() => _kits.CurrentRow?.Cells["Codigo"].Value as string;

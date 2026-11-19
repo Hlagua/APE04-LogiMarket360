@@ -424,6 +424,7 @@ public class FlujosNegocioTests
         Assert.Throws<AccesoDenegadoException>(() => e.Proveedor.CreateScope().ServiceProvider.GetRequiredService<ServicioPedidos>().NuevoEditor());
         var r = await e.Confirmar(id);
         Assert.Equal("ACCESO_DENEGADO", r.Codigo);
+        Assert.Equal(2, e.Unico<MetricasSesion>().Instantanea().OperacionesDenegadas); // NuevoEditor + Confirmar, sin duplicar
         Assert.Empty(e.Unico<IBitacoraTecnica>().Entradas("PAGO"));
         Assert.Equal(8, await e.Stock("P01"));
     }

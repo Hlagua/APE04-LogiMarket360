@@ -16,6 +16,7 @@ public sealed class FormPrincipal : Form
     private readonly VistaCarrito _carrito;
 
     public bool CerroSesion { get; private set; }
+    private bool _descarteConfirmado;
 
     public FormPrincipal(Ejecutor ejecutor, FormularioPrincipalMediator mediador, UsuarioSesion usuario)
     {
@@ -40,11 +41,9 @@ public sealed class FormPrincipal : Form
 
         var barraEstado = new StatusStrip();
         barraEstado.Items.Add(_estado);
-        _ejecutor.Mensaje += (texto, ok) =>
-        {
-            _estado.Text = $"{DateTime.Now:HH:mm:ss}  {texto}";
-            _estado.ForeColor = ok ? Color.DarkGreen : Color.Firebrick;
-        };
+        // El Ejecutor es singleton y sobrevive a la sesión: hay que desuscribirse al cerrar.
+        _ejecutor.Mensaje += MostrarEstado;
+        FormClosed += (_, _) => _ejecutor.Mensaje -= MostrarEstado;
 
         _carrito = new VistaCarrito(ejecutor, mediador);
         Agregar("01·Panel", new VistaPanel(ejecutor, mediador));
@@ -72,7 +71,7 @@ public sealed class FormPrincipal : Form
         Shown += async (_, _) => await _mediador.NotificarAsync(null, EventoVista.SesionIniciada);
         FormClosing += (_, e) =>
         {
-            if (_carrito.TieneCambiosSinGuardar &&
+            if (!_descarteConfirmado && _carrito.TieneCambiosSinGuardar &&
                 !Ui.Confirmar("El carrito tiene cambios sin guardar. ¿Salir de todos modos?", "Cambios sin guardar"))
                 e.Cancel = true;
         };
@@ -81,6 +80,12 @@ public sealed class FormPrincipal : Form
         {
             if (e.Control && e.KeyCode is >= Keys.D1 and <= Keys.D9) { _pestanas.SelectedIndex = e.KeyCode - Keys.D1; e.Handled = true; }
         };
+    }
+
+    private void MostrarEstado(string texto, bool ok)
+    {
+        _estado.Text = $"{DateTime.Now:HH:mm:ss}  {texto}";
+        _estado.ForeColor = ok ? Color.DarkGreen : Color.Firebrick;
     }
 
     private void Agregar(string titulo, VistaBase vista)
@@ -95,6 +100,7 @@ public sealed class FormPrincipal : Form
     private async void CerrarSesion()
     {
         if (_carrito.TieneCambiosSinGuardar && !Ui.Confirmar("Hay cambios sin guardar en el carrito. ¿Cerrar sesión?")) return;
+        _descarteConfirmado = true; // evita que FormClosing vuelva a preguntar lo mismo
         await _ejecutor.Ejecutar(sp => sp.GetRequiredService<ServicioAutenticacion>().CerrarSesionAsync());
         CerroSesion = true;
         Close();

@@ -19,19 +19,20 @@ internal static class Program
         ApplicationConfiguration.Initialize();
         ConfigurarCultura();
 
-        var carpetaDatos = Path.Combine(AppContext.BaseDirectory, "datos");
-        Directory.CreateDirectory(carpetaDatos);
-        var opciones = new OpcionesLogiMarket
+        OpcionesLogiMarket opciones;
+        try
         {
-            RutaBaseDatos = Environment.GetEnvironmentVariable("LOGIMARKET_DB") ?? Path.Combine(carpetaDatos, "logimarket.db"),
-            CarpetaSalidas = Path.Combine(AppContext.BaseDirectory, "salidas"),
-            CarpetaLogs = Path.Combine(AppContext.BaseDirectory, "logs")
-        };
+            opciones = LeerConfiguracion();
+        }
+        catch (Exception ex) when (ex is System.Text.Json.JsonException or IOException or UnauthorizedAccessException)
+        {
+            MessageBox.Show($"appsettings.json no es válido:\n{ex.Message}", "LogiMarket 360", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return;
+        }
 
         var servicios = new ServiceCollection();
         servicios.AgregarLogiMarket(opciones);
         servicios.AddSingleton<Application.Puertos.ISalidaDocumento, SalidaVistaPrevia>(); // Bridge: medio visual
-        servicios.AddSingleton<FormularioPrincipalMediator>();
         servicios.AddSingleton<Ejecutor>();
         using var proveedor = servicios.BuildServiceProvider();
 
@@ -59,6 +60,34 @@ internal static class Program
             if (!principal.CerroSesion) return;
         }
     }
+
+    /// <summary>
+    /// Rutas de base, salidas y logs. Prioridad: variable LOGIMARKET_DB (solo la base) → appsettings.json
+    /// junto al ejecutable (ver appsettings.ejemplo.json) → valores por defecto.
+    /// </summary>
+    private static OpcionesLogiMarket LeerConfiguracion()
+    {
+        var baseDir = AppContext.BaseDirectory;
+        string Ruta(string? valor, string porDefecto) =>
+            Path.GetFullPath(Path.Combine(baseDir, string.IsNullOrWhiteSpace(valor) ? porDefecto : valor));
+
+        var archivo = Path.Combine(baseDir, "appsettings.json");
+        var config = File.Exists(archivo)
+            ? System.Text.Json.JsonSerializer.Deserialize<ConfiguracionArchivo>(File.ReadAllText(archivo),
+                new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true, ReadCommentHandling = System.Text.Json.JsonCommentHandling.Skip })
+            : null;
+
+        var rutaDb = Ruta(Environment.GetEnvironmentVariable("LOGIMARKET_DB") ?? config?.RutaBaseDatos, "datos/logimarket.db");
+        Directory.CreateDirectory(Path.GetDirectoryName(rutaDb)!);
+        return new OpcionesLogiMarket
+        {
+            RutaBaseDatos = rutaDb,
+            CarpetaSalidas = Ruta(config?.CarpetaSalidas, "salidas"),
+            CarpetaLogs = Ruta(config?.CarpetaLogs, "logs")
+        };
+    }
+
+    private sealed record ConfiguracionArchivo(string? RutaBaseDatos, string? CarpetaSalidas, string? CarpetaLogs);
 
     /// <summary>Español (Ecuador) con punto decimal para que los importes coincidan con la guía.</summary>
     private static void ConfigurarCultura()

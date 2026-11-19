@@ -251,7 +251,7 @@ public static class AnalizadorFiltro
                 {
                     ExigirIgualdad(operador, campo.Valor);
                     var valor = Valor();
-                    if (!Enum.TryParse<EstadoPedido>(valor.Valor, true, out var estado))
+                    if (valor.Tipo != TipoToken.Texto || !Enum.TryParse<EstadoPedido>(valor.Valor, true, out var estado) || !Enum.IsDefined(estado))
                         throw new ExcepcionSintaxisFiltro(valor.Posicion,
                             $"estado desconocido '{valor.Valor}'. Valores: {string.Join(", ", Enum.GetNames<EstadoPedido>())}.");
                     return new ExpresionEstado(operador.Valor == "=", estado);

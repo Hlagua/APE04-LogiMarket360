@@ -79,7 +79,7 @@ public sealed class ConfirmacionPedidoFacade
         }
         catch (AccesoDenegadoException ex)
         {
-            _metricas.RegistrarDenegacion();
+            // La denegación ya la contó quien la originó (ServicioAutorizacion o PagoAutorizadoProxy).
             return await RechazarAsync(pedidoId, "ACCESO_DENEGADO", ex.Message, null, ct, "SEGURIDAD");
         }
         catch (ExcepcionConcurrencia ex)

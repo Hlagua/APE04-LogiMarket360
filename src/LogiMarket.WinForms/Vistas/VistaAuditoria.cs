@@ -25,7 +25,7 @@ public sealed class VistaAuditoria : VistaBase
         _categoria.SelectedIndexChanged += async (_, _) => await RefrescarAsync();
         _categoriaLog.SelectedIndexChanged += async (_, _) => await RefrescarAsync();
         _texto.TextChanged += async (_, _) => await RefrescarAsync();
-        Ejecutor.Singleton<MetricasSesion>().Cambiaron += _ => { if (IsHandleCreated) BeginInvoke(MostrarMetricas); };
+        AlCambiarMetricas(_ => MostrarMetricas());
 
         var pestanas = new TabControl { Dock = DockStyle.Fill };
         Agregar(pestanas, "Auditoría (BD)", Ui.Layout("Auditoría de negocio y seguridad",

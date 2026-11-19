@@ -25,7 +25,7 @@ public sealed class AuditoriaPagoDecorator : IPasarelaPago
     {
         var correlacion = Guid.NewGuid().ToString("N")[..12];
         using var _ = ContextoCorrelacion.Iniciar(correlacion);
-        _bitacora.Registrar(Categoria, $"INICIO cobro proveedor={_interna.Nombre} monto={monto:0.00} clave={claveIdempotencia}");
+        _bitacora.Registrar(Categoria, $"INICIO cobro proveedor={_interna.Nombre} monto={Domain.Comun.Dinero.Formatear(monto)} clave={claveIdempotencia}");
         try
         {
             var resultado = await _interna.CobrarAsync(monto, claveIdempotencia, ct);

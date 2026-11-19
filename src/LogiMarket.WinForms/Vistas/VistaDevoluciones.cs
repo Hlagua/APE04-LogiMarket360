@@ -53,7 +53,7 @@ public sealed class VistaDevoluciones : VistaBase
     private void Estimar()
     {
         _estimado.Text = Ui.Seleccionado<PedidoResumenDto>(_grilla) is { } p
-            ? $"{p.Numero}: pagado {Ui.Usd(p.Total)} − envío {Ui.Usd(p.Tarifa)} = reembolso posible {Ui.Usd(p.Subtotal - p.Descuento)}" +
+            ? $"{p.Numero}: pagado {Ui.Usd(p.Total)} − envío {Ui.Usd(p.Tarifa)} = reembolso posible {Ui.Usd(p.ImporteReembolsable)}" +
               (p.FechaEntrega is { } f ? $" | entregado hace {(DateTime.Now.Date - f.Date).Days} días" : "")
             : "Seleccione un pedido entregado.";
     }

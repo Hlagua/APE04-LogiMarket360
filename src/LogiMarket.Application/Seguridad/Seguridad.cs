@@ -89,12 +89,14 @@ public sealed class ServicioAutorizacion : IServicioAutorizacion
     private readonly ISesionActual _sesion;
     private readonly PoliticaPermisos _politica;
     private readonly IBitacoraTecnica _bitacora;
+    private readonly Metricas.MetricasSesion _metricas;
 
-    public ServicioAutorizacion(ISesionActual sesion, PoliticaPermisos politica, IBitacoraTecnica bitacora)
+    public ServicioAutorizacion(ISesionActual sesion, PoliticaPermisos politica, IBitacoraTecnica bitacora, Metricas.MetricasSesion metricas)
     {
         _sesion = sesion;
         _politica = politica;
         _bitacora = bitacora;
+        _metricas = metricas;
     }
 
     public bool Puede(Operacion operacion) => _politica.Permite(_sesion.Usuario?.Rol, operacion);
@@ -110,6 +112,7 @@ public sealed class ServicioAutorizacion : IServicioAutorizacion
     private AccesoDenegadoException Denegar(Operacion operacion, string mensaje)
     {
         _bitacora.Registrar("SEGURIDAD", $"DENEGADO {operacion} usuario={_sesion.NombreUsuario}: {mensaje}");
+        _metricas.RegistrarDenegacion();
         return new AccesoDenegadoException(operacion.ToString(), mensaje);
     }
 }

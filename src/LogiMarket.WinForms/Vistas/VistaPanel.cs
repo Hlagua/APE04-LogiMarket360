@@ -20,7 +20,7 @@ public sealed class VistaPanel : VistaBase
         var barra = Ui.Barra(Ui.Boton("Actualizar", async (_, _) => await RefrescarAsync()));
         Ui.Ajustable(_metricas, this);
         Controls.Add(Ui.Layout("Panel general", barra, _tarjetas, _metricas, alertas));
-        Ejecutor.Singleton<MetricasSesion>().Cambiaron += m => BeginInvokeSeguro(() => MostrarMetricas(m));
+        AlCambiarMetricas(MostrarMetricas);
     }
 
     public override async Task RefrescarAsync()
@@ -55,10 +55,5 @@ public sealed class VistaPanel : VistaBase
         p.Controls.Add(new Label { Text = valor, Font = new Font("Segoe UI Semibold", 15f), ForeColor = Ui.ColorPrimario, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter });
         p.Controls.Add(new Label { Text = titulo, Dock = DockStyle.Top, TextAlign = ContentAlignment.MiddleCenter, Height = 22 });
         _tarjetas.Controls.Add(p);
-    }
-
-    private void BeginInvokeSeguro(Action accion)
-    {
-        if (IsHandleCreated && !IsDisposed) BeginInvoke(accion);
     }
 }

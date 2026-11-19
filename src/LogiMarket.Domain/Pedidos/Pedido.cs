@@ -75,7 +75,7 @@ public class Pedido : IPrototipo<Pedido>
     public void AgregarLinea(IElementoCatalogo elemento, int cantidad)
     {
         EstadoActual.ExigirEdicion();
-        var existente = _lineas.FirstOrDefault(l => l.Codigo == elemento.Codigo);
+        var existente = _lineas.FirstOrDefault(l => string.Equals(l.Codigo, elemento.Codigo, StringComparison.OrdinalIgnoreCase));
         if (existente is not null) existente.CambiarCantidad(existente.Cantidad + Guardia.CantidadPositiva(cantidad));
         else _lineas.Add(PedidoDetalle.DesdeElemento(elemento, cantidad));
         InvalidarValoracion();

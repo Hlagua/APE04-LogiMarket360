@@ -42,7 +42,9 @@ public sealed class VistaCobro : VistaBase
         {
             _pedido.DisplayMember = "Texto";
             _pedido.ValueMember = "Id";
-            _pedido.DataSource = lista.Where(p => p.Estado is "BORRADOR" or "VALIDADO")
+            // Se incluyen los PAGADOS para poder demostrar P07: repetir con la misma clave devuelve el
+            // resultado original sin un segundo cobro (lo garantizan la idempotencia y el State).
+            _pedido.DataSource = lista.Where(p => p.Estado is "BORRADOR" or "VALIDADO" or "PAGADO")
                 .Select(p => new { p.Id, Texto = $"{p.Numero} - {p.Cliente} - {p.Estado} - {Ui.Usd(p.Total)}" }).ToList();
             if (seleccionado is not null) _pedido.SelectedValue = seleccionado;
         }
@@ -63,7 +65,7 @@ public sealed class VistaCobro : VistaBase
 
     private async Task MostrarImportesAsync()
     {
-        if (PedidoId is not { } id) { _importes.Text = "No hay pedidos en BORRADOR o VALIDADO."; return; }
+        if (PedidoId is not { } id) { _importes.Text = "No hay pedidos en BORRADOR, VALIDADO o PAGADO."; return; }
         _clave.Text = ConfirmarPedidoCommand.ClavePorDefecto(id);
         var (ok, d) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<ServicioPedidos>().DetalleAsync(id));
         if (!ok || d is null) return;
@@ -94,6 +96,7 @@ public sealed class VistaCobro : VistaBase
             Ejecutor.Mostrar(r, r.Exito);
             if (r.Exito) await NotificarAsync(EventoVista.PedidoConfirmado, id);
             else await NotificarAsync(EventoVista.MetricasCambiadas, id);
+            await RefrescarAsync(); // el emisor no lo refresca el Mediator: se actualiza el estado mostrado
         }
         finally
         {

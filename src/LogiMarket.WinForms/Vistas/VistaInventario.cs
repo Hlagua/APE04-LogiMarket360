@@ -22,6 +22,7 @@ public sealed class VistaInventario : VistaBase
         _soloSeleccion.CheckedChanged += async (_, _) => await CargarMovimientosAsync();
         _existencias.CellFormatting += (_, e) =>
         {
+            if (e.RowIndex < 0 || e.RowIndex >= _existencias.Rows.Count) return;
             if (_existencias.Rows[e.RowIndex].DataBoundItem is ProductoDto p && p.Stock <= ServicioAdministracion.UmbralStockBajo)
                 e.CellStyle!.BackColor = Color.FromArgb(255, 236, 236);
         };

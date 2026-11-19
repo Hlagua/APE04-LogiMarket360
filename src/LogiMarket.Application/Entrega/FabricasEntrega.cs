@@ -72,7 +72,7 @@ public sealed class EntregaEstandarFactory : IFabricaEntrega
         {
             FamiliaCoherente.Exigir(this, plazo);
             var numero = $"STD-{fecha:yyyyMMdd}-{pedidoId:000000}";
-            var etiqueta = $"[ENVIO ESTANDAR] Guía {numero} | Destinatario: {cliente} | Peso {pesoKg:0.00} kg | " +
+            var etiqueta = $"[ENVIO ESTANDAR] Guía {numero} | Destinatario: {cliente} | Peso {Dinero.Formatear(pesoKg)} kg | " +
                            $"Plazo {plazo.Dias} días | Llegada estimada {plazo.EstimarEntrega(fecha):yyyy-MM-dd}";
             return new GuiaEnvio(numero, Familia, etiqueta, plazo.Dias, plazo.EstimarEntrega(fecha));
         }
@@ -111,7 +111,7 @@ public sealed class EntregaExpresFactory : IFabricaEntrega
         {
             FamiliaCoherente.Exigir(this, plazo);
             var numero = $"EXP-{fecha:yyyyMMdd}-{pedidoId:000000}";
-            var etiqueta = $"*** EXPRES - PRIORIDAD ALTA *** Guía {numero} | {cliente} | {pesoKg:0.00} kg | " +
+            var etiqueta = $"*** EXPRES - PRIORIDAD ALTA *** Guía {numero} | {cliente} | {Dinero.Formatear(pesoKg)} kg | " +
                            $"Entrega en {plazo.Dias} día ({plazo.EstimarEntrega(fecha):yyyy-MM-dd})";
             return new GuiaEnvio(numero, Familia, etiqueta, plazo.Dias, plazo.EstimarEntrega(fecha));
         }
