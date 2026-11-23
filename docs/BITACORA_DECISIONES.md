@@ -6,10 +6,52 @@ Sirve de fuente para el informe final (que se elaborará cuando se apruebe el si
 ## Estado actual
 
 - Solución con 5 proyectos compilando sin errores ni advertencias; migración `Inicial`.
-- 49 pruebas automatizadas en verde (`dotnet test`), que cubren los casos P01–P38 salvo P28 (ver decisión del 2026-11-19).
+- 59 pruebas automatizadas en verde (`dotnet test`). Cubren P01–P38 salvo P28 (Mediator), que se evidencia en
+  pantalla. Cada ejecución genera `tests/LogiMarket.Tests/bin/<Config>/net8.0/evidencias/matriz-esperado-obtenido.md`
+  (entrada, esperado, obtenido, archivo y método).
 - Interfaz WinForms con 12 pestañas; prueba de humo: las 12 vistas cargan y el Mediator coordina sin errores.
-- Git: commit inicial `9e6ad89`; a partir de aquí, un commit por cada iteración.
+- Git: un commit por iteración, solo a nombre del usuario.
 - Pendiente: recorrido manual de la interfaz por el usuario e informe PDF (al final).
+
+## 2026-11-22 — Segunda revisión y fallas recurrentes de entregas anteriores
+
+### Decisiones confirmadas con la guía (no se cambian)
+
+| Tema | Decisión vigente | Sustento en la guía |
+|---|---|---|
+| Descuento MAYORISTA | 15 % con 10 o más unidades físicas, **sin importar la categoría**; gana sobre VIP | Texto literal de "Promociones excluyentes". Una revisión externa lo marcó como error: es correcto |
+| Devoluciones | ADMIN y VENTAS | Actores: VENTAS gestiona pedidos y cobros; el reembolso es operación comercial |
+| Stock por DEFECTO | Vuelve al mismo stock vendible, una sola vez | El inventario es un entero por SKU; P35 pide "un solo reintegro" |
+| Ajuste manual de stock | Solo ADMIN | La guía no lo asigna a BODEGA; es corrección administrativa |
+| VALIDADO a BORRADOR | No existe; se cancela y se arma otro borrador | "Prohibido retroceder estados desde el formulario" |
+| Estado DEVUELTO | No existe; marca sobre ENTREGADO + devolución única | Seis estados fijos del enunciado |
+| P28 | Evidencia en pantalla (captura) + prueba de humo | Tests solo referencia Domain, Application e Infrastructure |
+| Matriz de 38 | El log de `dotnet test` basta en casos automatizados | "captura o log"; las capturas siguen siendo obligatorias para pantallas y los 23 patrones |
+| P21 | Identidad compartida y recuento de instancias como comprobación estable; memoria con GC como cifra reportada | "ReferenceEquals, recuento de objetos y memoria en condiciones equivalentes" |
+
+### Correcciones de la revisión externa
+
+| Hallazgo | Corrección |
+|---|---|
+| Singleton sin control de instancia (constructor público, solo DI) | `MetricasSesion` con constructor privado e instancia única `MetricasSesion.Instancia` (Lazy, segura para hilos); DI registra ESA instancia como `IMetricasSesion`. Prueba: sin constructores públicos y misma instancia en DI y en la clase. Las pruebas corren en serie porque el Singleton es real |
+| La pasarela no respetaba la clave de idempotencia | Las pasarelas simuladas recuerdan las claves APROBADAS (el Adapter añade esa garantía al sistema legado) y una repetición devuelve la misma autorización. La Facade guarda estado y stock ANTES de cobrar (un conflicto se detecta sin cobrar). Prueba: falla después de aprobar, reintento con la misma clave = 1 solo cobro real. Los rechazos no se recuerdan, para poder reintentar |
+| Clave por defecto repetible tras restablecer la base | Incluye la fecha de creación del pedido (`CONF-<id>-<fecha>`) |
+| El reintento del Outbox reenviaba el aviso | El observador de notificaciones guarda una constancia (`NOTIFICACION` + id de evento) apenas envía y la consulta antes de enviar. Prueba: falla otro observador, se reprocesa, 1 aviso |
+| Deshacer no volvía al carrito vacío; quitar la última línea dejaba un pedido sin líneas | El historial admite el estado "carrito vacío". Invariante del agregado: siempre al menos 1 línea; quitar la última vacía el carrito (se puede deshacer). Botón "Vaciar carrito" |
+| Flyweight: prueba dependiente del GC; la fábrica conservaba datos viejos | Se verifica por identidad (20 cadenas retenidas con Flyweight frente a 4 000 sin él) y la memoria solo se reporta. Si cambian nombre, categoría o descripción, el SKU recibe UNA instancia nueva |
+| `CLIENTE = texto` usaba "contiene" | Igualdad del nombre (sin distinguir mayúsculas ni espacios extremos), como indica la gramática |
+
+### Fallas recurrentes de entregas anteriores atendidas
+
+| Falla recurrente | Acción |
+|---|---|
+| Números mágicos | `Domain/Comun/ParametrosNegocio.cs` concentra tasas, tarifas, plazos, días de devolución, umbrales y límites |
+| DIP: inyectar clases concretas | Contratos en `Application/Contratos/Contratos.cs`; servicios, Facade, comandos, observadores y UI dependen de interfaces (`IServicioPedidos`, `IConfirmacionPedido`, `IProcesadorOutbox`, `ICalculadoraDescuento`, `IPoliticaPermisos`, `IMetricasSesion`...) |
+| CQRS a medias | Lado de lectura: `IServicioConsultas` + `IConsultasLectura` (AsNoTracking). Lado de escritura: servicios de comando sin consultas y repositorios por agregado sin búsquedas para pantallas |
+| Valores por defecto silenciosos ante entradas inválidas | Proveedor o canal desconocido se rechaza (`PROVEEDOR_DESCONOCIDO`, `CANAL_DESCONOCIDO`) en vez de elegir uno por defecto |
+| Evidencia sin esperado frente a obtenido | `tests/.../Soporte/Evidencia.cs` genera la matriz con entrada, esperado, obtenido, archivo y método |
+| Casos borde | Pruebas de stock igual a la cantidad, clave reutilizada con otro monto, rechazo no recordado, carrito vacío, ESTADO numérico, CLIENTE exacto |
+| Factory Method frente a Simple Factory | Ya cumplía: creador abstracto con `CrearNotificador()` y subclases EMAIL/SMS; la selección no crea objetos con `switch` |
 
 ## 2026-11-19 — Revisión externa del código
 

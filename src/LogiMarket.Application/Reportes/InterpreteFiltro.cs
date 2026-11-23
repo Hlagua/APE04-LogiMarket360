@@ -73,7 +73,10 @@ public sealed class ExpresionTotal : IExpresionFiltro
     public string Describir() => $"TOTAL {_operador} {_valor.ToString("0.00", CultureInfo.InvariantCulture)}";
 }
 
-/// <summary>CLIENTE = texto: coincidencia parcial sin distinguir mayúsculas.</summary>
+/// <summary>
+/// CLIENTE = texto: IGUALDAD del nombre completo (como indica la gramática de la guía), sin distinguir
+/// mayúsculas ni espacios en los extremos. "CLIENTE = a" no selecciona a "Ana".
+/// </summary>
 public sealed class ExpresionCliente : IExpresionFiltro
 {
     private readonly bool _igual;
@@ -85,7 +88,8 @@ public sealed class ExpresionCliente : IExpresionFiltro
         _texto = texto;
     }
 
-    public bool Interpretar(PedidoResumenDto p) => p.Cliente.Contains(_texto, StringComparison.OrdinalIgnoreCase) == _igual;
+    public bool Interpretar(PedidoResumenDto p) =>
+        string.Equals(p.Cliente.Trim(), _texto.Trim(), StringComparison.OrdinalIgnoreCase) == _igual;
     public string Describir() => $"CLIENTE {(_igual ? "=" : "!=")} '{_texto}'";
 }
 

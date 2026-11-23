@@ -52,17 +52,6 @@ public sealed class ClienteRepositorioEf(LogiMarketDbContext db) : IClienteRepos
     public Task<Cliente?> ObtenerAsync(int id, CancellationToken ct = default) =>
         db.Clientes.FirstOrDefaultAsync(c => c.Id == id, ct);
 
-    public async Task<IReadOnlyList<Cliente>> BuscarAsync(string? texto, CancellationToken ct = default)
-    {
-        var q = db.Clientes.AsQueryable();
-        if (!string.IsNullOrWhiteSpace(texto))
-        {
-            var t = texto.Trim().ToLower();
-            q = q.Where(c => c.Nombre.ToLower().Contains(t) || c.Identificacion.Contains(t) || c.Email.ToLower().Contains(t));
-        }
-        return await q.OrderBy(c => c.Nombre).ToListAsync(ct);
-    }
-
     public Task<bool> ExisteIdentificacionAsync(string identificacion, CancellationToken ct = default) =>
         db.Clientes.AnyAsync(c => c.Identificacion == identificacion.Trim(), ct);
 
@@ -101,9 +90,6 @@ public sealed class DespachoRepositorioEf(LogiMarketDbContext db) : IDespachoRep
 {
     public Task<Despacho?> ObtenerPorPedidoAsync(int pedidoId, CancellationToken ct = default) =>
         db.Despachos.FirstOrDefaultAsync(d => d.PedidoId == pedidoId, ct);
-
-    public Task<Despacho?> ObtenerPorGuiaAsync(string guia, CancellationToken ct = default) =>
-        db.Despachos.FirstOrDefaultAsync(d => d.NumeroGuia == guia, ct);
 
     public void Agregar(Despacho despacho) => db.Despachos.Add(despacho);
 }

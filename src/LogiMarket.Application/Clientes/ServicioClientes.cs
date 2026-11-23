@@ -1,5 +1,5 @@
 using LogiMarket.Application.Comun;
-using LogiMarket.Application.Consultas;
+using LogiMarket.Application.Contratos;
 using LogiMarket.Application.Puertos;
 using LogiMarket.Application.Seguridad;
 using LogiMarket.Domain.Clientes;
@@ -9,38 +9,25 @@ namespace LogiMarket.Application.Clientes;
 
 public sealed record ClienteEdicion(int Id, string Identificacion, string Nombre, string Email, string Telefono, CategoriaCliente Categoria);
 
-public sealed class ServicioClientes
+/// <summary>Comandos de clientes. Las consultas están en ServicioConsultas.</summary>
+public sealed class ServicioClientes : IServicioClientes
 {
     private readonly IClienteRepositorio _clientes;
-    private readonly IConsultasLectura _consultas;
     private readonly IAuditoriaRepositorio _auditoria;
     private readonly IUnidadDeTrabajo _uow;
     private readonly IServicioAutorizacion _autorizacion;
     private readonly ISesionActual _sesion;
     private readonly IReloj _reloj;
 
-    public ServicioClientes(IClienteRepositorio clientes, IConsultasLectura consultas, IAuditoriaRepositorio auditoria,
+    public ServicioClientes(IClienteRepositorio clientes, IAuditoriaRepositorio auditoria,
         IUnidadDeTrabajo uow, IServicioAutorizacion autorizacion, ISesionActual sesion, IReloj reloj)
     {
         _clientes = clientes;
-        _consultas = consultas;
         _auditoria = auditoria;
         _uow = uow;
         _autorizacion = autorizacion;
         _sesion = sesion;
         _reloj = reloj;
-    }
-
-    public Task<IReadOnlyList<ClienteDto>> BuscarAsync(string? texto, CancellationToken ct = default)
-    {
-        _autorizacion.Exigir(Operacion.ConsultarInformacion);
-        return _consultas.ClientesAsync(texto, ct);
-    }
-
-    public async Task<Cliente> ObtenerAsync(int id, CancellationToken ct = default)
-    {
-        _autorizacion.Exigir(Operacion.ConsultarInformacion);
-        return await _clientes.ObtenerAsync(id, ct) ?? throw new ExcepcionAplicacion("CLIENTE_NO_EXISTE", $"No existe el cliente {id}.");
     }
 
     public async Task<ResultadoOperacion<int>> GuardarAsync(ClienteEdicion datos, CancellationToken ct = default)

@@ -4,6 +4,7 @@ using LogiMarket.Application.Seguridad;
 using LogiMarket.Domain.Clientes;
 using LogiMarket.WinForms.Infraestructura;
 using Microsoft.Extensions.DependencyInjection;
+using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.WinForms.Vistas;
 
@@ -40,7 +41,7 @@ public sealed class VistaClientes : VistaBase
     public override async Task RefrescarAsync()
     {
         _edicion.ForEach(c => c.Enabled = Puede(Operacion.GestionarClientes));
-        var (ok, lista) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<ServicioClientes>().BuscarAsync(_buscar.Text));
+        var (ok, lista) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<IServicioConsultas>().ClientesAsync(_buscar.Text));
         if (ok && lista is not null) Ui.Enlazar(_grilla, lista, nameof(ClienteDto.Id));
     }
 
@@ -71,7 +72,7 @@ public sealed class VistaClientes : VistaBase
             !Validar(_nombre, _nombre.Text.Trim().Length > 0, "Nombre obligatorio") ||
             !Validar(_email, _email.Text.Contains('@'), "Email inválido")) return;
         var datos = new ClienteEdicion(_idActual, _identificacion.Text, _nombre.Text, _email.Text, _telefono.Text, (CategoriaCliente)_categoria.SelectedItem!);
-        var (_, r) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<ServicioClientes>().GuardarAsync(datos));
+        var (_, r) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<IServicioClientes>().GuardarAsync(datos));
         if (!Ejecutor.Mostrar(r)) return;
         _idActual = r!.Valor;
         await RefrescarAsync();
@@ -82,7 +83,7 @@ public sealed class VistaClientes : VistaBase
     {
         if (Ui.Seleccionado<ClienteDto>(_grilla) is not { } c) return;
         if (!Ui.Confirmar($"¿{(c.Activo ? "Desactivar" : "Activar")} al cliente {c.Nombre}?")) return;
-        var (_, r) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<ServicioClientes>().CambiarEstadoAsync(c.Id, !c.Activo));
+        var (_, r) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<IServicioClientes>().CambiarEstadoAsync(c.Id, !c.Activo));
         if (Ejecutor.Mostrar(r)) { await RefrescarAsync(); await NotificarAsync(EventoVista.ClientesCambiados); }
     }
 }

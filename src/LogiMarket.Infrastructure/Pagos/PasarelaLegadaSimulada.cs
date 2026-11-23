@@ -33,7 +33,7 @@ public class PasarelaLegadaSimulada
         _traza($"PASARELA LEGADA CobrarCentavos({centavos}, \"{referencia}\")");
         if (_fallar()) throw new TimeoutException("La pasarela legada no respondió (simulado).");
         if (centavos <= 0) return new RespuestaLegada { Codigo = "13", Texto = "MONTO INVALIDO" };
-        if (_rechazar() || centavos > 1_000_000) return new RespuestaLegada { Codigo = "51", Texto = "FONDOS INSUFICIENTES" };
+        if (_rechazar() || centavos > (long)(Domain.Comun.ParametrosNegocio.MontoMaximoCobroSimulado * 100)) return new RespuestaLegada { Codigo = "51", Texto = "FONDOS INSUFICIENTES" };
         var n = Interlocked.Increment(ref _secuencia);
         return new RespuestaLegada { Codigo = "00", NumeroAutorizacion = $"LEG{DateTime.Now:HHmmssfff}{n:0000}", Texto = "APROBADA" };
     }

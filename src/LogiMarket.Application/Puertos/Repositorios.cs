@@ -9,7 +9,9 @@ using LogiMarket.Domain.Usuarios;
 
 namespace LogiMarket.Application.Puertos;
 
-// Interfaces PEQUEÑAS por agregado (ISP). Implementadas con EF Core en Infrastructure (DIP).
+// LADO DE ESCRITURA (CQRS básico): interfaces PEQUEÑAS por agregado (ISP), implementadas con EF Core en
+// Infrastructure (DIP). Solo cargan agregados para modificarlos y los agregan; las consultas para pantallas
+// y reportes van por IConsultasLectura (Consultas/ConsultasLectura.cs).
 
 public interface IProductoRepositorio
 {
@@ -31,7 +33,6 @@ public interface IKitRepositorio
 public interface IClienteRepositorio
 {
     Task<Cliente?> ObtenerAsync(int id, CancellationToken ct = default);
-    Task<IReadOnlyList<Cliente>> BuscarAsync(string? texto, CancellationToken ct = default);
     Task<bool> ExisteIdentificacionAsync(string identificacion, CancellationToken ct = default);
     void Agregar(Cliente cliente);
 }
@@ -57,7 +58,6 @@ public interface IMovimientoInventarioRepositorio
 public interface IDespachoRepositorio
 {
     Task<Despacho?> ObtenerPorPedidoAsync(int pedidoId, CancellationToken ct = default);
-    Task<Despacho?> ObtenerPorGuiaAsync(string guia, CancellationToken ct = default);
     void Agregar(Despacho despacho);
 }
 

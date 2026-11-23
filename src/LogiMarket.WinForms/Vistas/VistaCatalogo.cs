@@ -4,6 +4,7 @@ using LogiMarket.Application.Consultas;
 using LogiMarket.Application.Seguridad;
 using LogiMarket.WinForms.Infraestructura;
 using Microsoft.Extensions.DependencyInjection;
+using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.WinForms.Vistas;
 
@@ -59,9 +60,9 @@ public sealed class VistaCatalogo : VistaBase
     public override async Task RefrescarAsync()
     {
         _soloAdmin.ForEach(c => c.Enabled = Puede(Operacion.GestionarCatalogo));
-        var (ok, productos) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<ServicioCatalogo>().ListarProductosAsync(_buscar.Text));
+        var (ok, productos) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<IServicioConsultas>().ProductosAsync(_buscar.Text));
         if (ok && productos is not null) Ui.Enlazar(_productos, productos, nameof(ProductoDto.Sku));
-        var (okK, kits) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<ServicioCatalogo>().ListarKitsAsync());
+        var (okK, kits) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<IServicioConsultas>().KitsAsync());
         if (okK && kits is not null)
             Ui.Enlazar(_kits, kits.Select(k => new { k.Codigo, k.Nombre, Precio = k.Precio, PesoKg = k.PesoKg, StockVendible = k.StockDisponible, k.Composicion }), "Codigo");
     }
@@ -99,8 +100,8 @@ public sealed class VistaCatalogo : VistaBase
             !Validar(_precio, _precio.Value > 0, "El precio debe ser mayor que cero")) return;
         var datos = new ProductoEdicion(_sku.Text, _nombre.Text, _categoria.Text, _descripcion.Text, _precio.Value, _peso.Value, (int)_stock.Value);
         var (_, r) = await Ejecutor.Ejecutar(sp => nuevo
-            ? sp.GetRequiredService<ServicioCatalogo>().CrearProductoAsync(datos)
-            : sp.GetRequiredService<ServicioCatalogo>().ActualizarProductoAsync(datos));
+            ? sp.GetRequiredService<IServicioCatalogo>().CrearProductoAsync(datos)
+            : sp.GetRequiredService<IServicioCatalogo>().ActualizarProductoAsync(datos));
         if (!Ejecutor.Mostrar(r)) return;
         await RefrescarAsync(); // el Mediator no refresca al emisor: la vista se actualiza a sí misma
         await NotificarAsync(EventoVista.CatalogoCambiado);
@@ -110,7 +111,7 @@ public sealed class VistaCatalogo : VistaBase
     {
         if (Ui.Seleccionado<ProductoDto>(_productos) is not { } p) return;
         if (!Ui.Confirmar($"¿{(p.Activo ? "Desactivar" : "Activar")} el producto {p.Sku}?")) return;
-        var (_, r) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<ServicioCatalogo>().CambiarEstadoProductoAsync(p.Sku, !p.Activo));
+        var (_, r) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<IServicioCatalogo>().CambiarEstadoProductoAsync(p.Sku, !p.Activo));
         if (!Ejecutor.Mostrar(r)) return;
         await RefrescarAsync(); // el Mediator no refresca al emisor: la vista se actualiza a sí misma
         await NotificarAsync(EventoVista.CatalogoCambiado);
@@ -135,7 +136,7 @@ public sealed class VistaCatalogo : VistaBase
     {
         if (!Validar(_kitCodigo, _kitCodigo.Text.Trim().Length > 0, "Código obligatorio") ||
             !Validar(_kitNombre, _kitNombre.Text.Trim().Length > 0, "Nombre obligatorio") || !LeerComponentes(out var comps)) return;
-        var (_, r) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<ServicioCatalogo>().CrearKitAsync(_kitCodigo.Text, _kitNombre.Text, comps));
+        var (_, r) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<IServicioCatalogo>().CrearKitAsync(_kitCodigo.Text, _kitNombre.Text, comps));
         if (!Ejecutor.Mostrar(r)) return;
         await RefrescarAsync(); // el Mediator no refresca al emisor: la vista se actualiza a sí misma
         await NotificarAsync(EventoVista.CatalogoCambiado);
@@ -148,7 +149,7 @@ public sealed class VistaCatalogo : VistaBase
         if (KitSeleccionado() is not { } kit || !LeerComponentes(out var comps)) return;
         foreach (var (codigo, cantidad) in comps)
         {
-            var (_, r) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<ServicioCatalogo>().AgregarComponenteAsync(kit, codigo, cantidad));
+            var (_, r) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<IServicioCatalogo>().AgregarComponenteAsync(kit, codigo, cantidad));
             if (!Ejecutor.Mostrar(r)) break;
         }
         await NotificarAsync(EventoVista.CatalogoCambiado);
@@ -161,7 +162,7 @@ public sealed class VistaCatalogo : VistaBase
         if (!Ui.Confirmar($"¿Quitar {string.Join(", ", comps.Select(c => c.Item1))} del kit {kit}?")) return;
         foreach (var (codigo, _) in comps)
         {
-            var (_, r) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<ServicioCatalogo>().QuitarComponenteAsync(kit, codigo));
+            var (_, r) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<IServicioCatalogo>().QuitarComponenteAsync(kit, codigo));
             if (!Ejecutor.Mostrar(r)) break;
         }
         await NotificarAsync(EventoVista.CatalogoCambiado);
@@ -171,7 +172,7 @@ public sealed class VistaCatalogo : VistaBase
     private async Task MostrarDesgloseAsync()
     {
         if (KitSeleccionado() is not { } kit) return;
-        var (ok, d) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<ServicioCatalogo>().DesglosarAsync(kit));
+        var (ok, d) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<IServicioConsultas>().DesgloseAsync(kit));
         if (!ok || d is null) return;
         _detalleKit.Text =
             $"{d.Codigo}: precio {Ui.Usd(d.Precio)} | {d.ResumenPeso}{Environment.NewLine}" +

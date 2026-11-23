@@ -2,6 +2,7 @@ using LogiMarket.Application.Seguridad;
 using LogiMarket.WinForms.Infraestructura;
 using LogiMarket.WinForms.Vistas;
 using Microsoft.Extensions.DependencyInjection;
+using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.WinForms.Formularios;
 
@@ -101,7 +102,7 @@ public sealed class FormPrincipal : Form
     {
         if (_carrito.TieneCambiosSinGuardar && !Ui.Confirmar("Hay cambios sin guardar en el carrito. ¿Cerrar sesión?")) return;
         _descarteConfirmado = true; // evita que FormClosing vuelva a preguntar lo mismo
-        await _ejecutor.Ejecutar(sp => sp.GetRequiredService<ServicioAutenticacion>().CerrarSesionAsync());
+        await _ejecutor.Ejecutar(sp => sp.GetRequiredService<IServicioAutenticacion>().CerrarSesionAsync());
         CerroSesion = true;
         Close();
     }

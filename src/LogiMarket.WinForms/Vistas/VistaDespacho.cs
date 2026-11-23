@@ -5,6 +5,7 @@ using LogiMarket.Application.Pedidos;
 using LogiMarket.Application.Seguridad;
 using LogiMarket.WinForms.Infraestructura;
 using Microsoft.Extensions.DependencyInjection;
+using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.WinForms.Vistas;
 
@@ -31,7 +32,7 @@ public sealed class VistaDespacho : VistaBase
     {
         _despachar.Enabled = Puede(Operacion.Despachar);
         _entregar.Enabled = Puede(Operacion.Entregar);
-        var (ok, lista) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<ServicioPedidos>().ListarAsync());
+        var (ok, lista) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<IServicioConsultas>().PedidosAsync());
         if (ok && lista is not null)
             Ui.Enlazar(_grilla, lista.Where(p => _todos.Checked || p.Estado is "PAGADO" or "DESPACHADO"), nameof(PedidoResumenDto.Id));
     }
@@ -50,9 +51,9 @@ public sealed class VistaDespacho : VistaBase
         if (!Ui.Confirmar($"¿{(despachar ? "Despachar" : "Registrar la entrega de")} {p.Numero}? El cambio de estado no se puede revertir.")) return;
         var (_, r) = await Ejecutor.Ejecutar(async sp =>
         {
-            var logistica = sp.GetRequiredService<ServicioLogistica>();
+            var logistica = sp.GetRequiredService<IServicioLogistica>();
             IComando comando = despachar ? new DespacharPedidoCommand(logistica, p.Id) : new EntregarPedidoCommand(logistica, p.Id);
-            return await Ejecutor.Singleton<InvocadorComandos>().EjecutarAsync(comando);
+            return await Ejecutor.Singleton<IInvocadorComandos>().EjecutarAsync(comando);
         });
         if (r is null) return;
         _resultado.Text = r.ToString();
@@ -65,7 +66,7 @@ public sealed class VistaDespacho : VistaBase
         var texto = _seguimiento.Text.Trim();
         if (texto.Length == 0 && Ui.Seleccionado<PedidoResumenDto>(_grilla) is { } p) texto = p.Id.ToString();
         if (!Validar(_seguimiento, texto.Length > 0, "Indique guía o pedido")) return;
-        var (ok, s) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<ServicioLogistica>().SeguimientoAsync(texto));
+        var (ok, s) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<IServicioConsultas>().SeguimientoAsync(texto));
         if (ok) _resultado.Text = s;
     }
 }

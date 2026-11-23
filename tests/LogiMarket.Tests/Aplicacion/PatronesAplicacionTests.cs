@@ -215,7 +215,7 @@ public class PatronesAplicacionTests
     {
         var bitacora = new BitacoraArchivo(null);
         var espia = new PasarelaEspia();
-        var proxy = new PagoAutorizadoProxy(new AuditoriaPagoDecorator(espia, bitacora), Sesion(rol), new PoliticaPermisos(), bitacora, new MetricasSesion());
+        var proxy = new PagoAutorizadoProxy(new AuditoriaPagoDecorator(espia, bitacora), Sesion(rol), new PoliticaPermisos(), bitacora, MetricasSesion.Instancia);
 
         if (autorizado)
         {
@@ -302,8 +302,8 @@ public class PatronesAplicacionTests
         Assert.Equal(5, fabrica.InstanciasCreadas);
         Assert.True(ReferenceEquals(filas[0].Metadatos, filas[5].Metadatos));
         Assert.True(medicion.ReferenciasCompartidas);
-        Assert.True(medicion.BytesConFlyweight < medicion.BytesSinFlyweight,
-            $"con={medicion.BytesConFlyweight} sin={medicion.BytesSinFlyweight}");
+        // Comprobación estable: objetos retenidos por identidad. La memoria (GC) solo se reporta.
+        Assert.True(medicion.CadenasRetenidasConFlyweight < medicion.CadenasRetenidasSinFlyweight);
         Assert.NotEqual(filas[0].Stock + filas[0].Cantidad, filas[5].Stock + filas[5].Cantidad + 1000); // extrínseco por fila
     }
 
@@ -311,10 +311,13 @@ public class PatronesAplicacionTests
     public async Task P15_Singleton()
     {
         await using var e = await EntornoPrueba.CrearAsync();
-        var vistaA = e.Proveedor.GetRequiredService<MetricasSesion>();
+        var vistaA = e.Proveedor.GetRequiredService<IMetricasSesion>();
         using var scope = e.Proveedor.CreateScope();
-        var vistaB = scope.ServiceProvider.GetRequiredService<MetricasSesion>();
+        var vistaB = scope.ServiceProvider.GetRequiredService<IMetricasSesion>();
         Assert.Same(vistaA, vistaB);
+        Assert.Same(MetricasSesion.Instancia, vistaA); // DI entrega la instancia que controla la propia clase
+        Assert.Empty(typeof(MetricasSesion).GetConstructors()); // sin constructores públicos: no hay "new MetricasSesion()"
+        Assert.Same(MetricasSesion.Instancia, MetricasSesion.Instancia);
 
         Parallel.For(0, 1000, _ => vistaA.RegistrarNotificacion());
         Parallel.For(0, 500, _ => vistaB.RegistrarDespacho());

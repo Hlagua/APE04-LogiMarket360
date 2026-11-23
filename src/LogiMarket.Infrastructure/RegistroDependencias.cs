@@ -25,6 +25,7 @@ using LogiMarket.Infrastructure.Seguridad;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.Infrastructure;
 
@@ -55,24 +56,24 @@ public static class RegistroDependencias
         s.AddSingleton<IReloj, RelojSistema>();
         s.AddSingleton<IBitacoraTecnica>(_ => new BitacoraArchivo(o.CarpetaLogs));
         s.AddSingleton<ISesionActual, SesionActual>();
-        s.AddSingleton<PoliticaPermisos>();
+        s.AddSingleton<IPoliticaPermisos, PoliticaPermisos>();
         s.AddSingleton<ConfiguracionDemo>();
-        s.AddSingleton<MetricasSesion>();                 // Singleton (patrón) gestionado por DI
-        s.AddSingleton<InvocadorComandos>();
-        s.AddSingleton<CatalogoVisualFlyweightFactory>(); // fábrica Flyweight compartida
-        s.AddSingleton<GeneradorVistaMasiva>();
+        s.AddSingleton<IMetricasSesion>(MetricasSesion.Instancia); // Singleton: DI registra la ÚNICA instancia que controla la clase
+        s.AddSingleton<IInvocadorComandos, InvocadorComandos>();
+        s.AddSingleton<IFabricaMetadatosSku, CatalogoVisualFlyweightFactory>(); // fábrica Flyweight compartida
+        s.AddSingleton<IGeneradorVistaMasiva, GeneradorVistaMasiva>();
         s.AddSingleton<IHasherContrasena, HasherContrasenaPbkdf2>();
 
         // ---- Strategy, Abstract Factory, Chain ----
         s.AddSingleton<IPoliticaDescuento, SinDescuento>();
         s.AddSingleton<IPoliticaDescuento, Vip10>();
         s.AddSingleton<IPoliticaDescuento, Mayorista15>();
-        s.AddSingleton(sp => new CalculadoraDescuento(sp.GetServices<IPoliticaDescuento>()));
+        s.AddSingleton<ICalculadoraDescuento>(sp => new CalculadoraDescuento(sp.GetServices<IPoliticaDescuento>()));
         s.AddSingleton<IFabricaEntrega, EntregaEstandarFactory>();
         s.AddSingleton<IFabricaEntrega, EntregaExpresFactory>();
-        s.AddSingleton<ProveedorFabricasEntrega>();
-        s.AddSingleton<ServicioValoracion>();
-        s.AddSingleton<CadenaValidacionPedido>();
+        s.AddSingleton<IProveedorFabricasEntrega, ProveedorFabricasEntrega>();
+        s.AddSingleton<IServicioValoracion, ServicioValoracion>();
+        s.AddSingleton<ICadenaValidacionPedido, CadenaValidacionPedido>();
 
         // ---- Persistencia (Unit of Work = DbContext por operación) ----
         s.AddDbContext<LogiMarketDbContext>(b => b.UseSqlite(cadena), ServiceLifetime.Scoped);
@@ -107,8 +108,8 @@ public static class RegistroDependencias
         }, sp.GetRequiredService<ConfiguracionDemo>()));
         s.AddScoped<IPasarelaPago>(sp => new PagoAutorizadoProxy(
             new AuditoriaPagoDecorator(sp.GetRequiredService<SelectorPasarela>().Actual, sp.GetRequiredService<IBitacoraTecnica>()),
-            sp.GetRequiredService<ISesionActual>(), sp.GetRequiredService<PoliticaPermisos>(),
-            sp.GetRequiredService<IBitacoraTecnica>(), sp.GetRequiredService<MetricasSesion>()));
+            sp.GetRequiredService<ISesionActual>(), sp.GetRequiredService<IPoliticaPermisos>(),
+            sp.GetRequiredService<IBitacoraTecnica>(), sp.GetRequiredService<IMetricasSesion>()));
         s.AddSingleton<IServicioReembolso, ServicioReembolsoSimulado>();
 
         // ---- Avisos (Factory Method) y Observer + Outbox ----
@@ -116,31 +117,32 @@ public static class RegistroDependencias
             sp.GetRequiredService<ConfiguracionDemo>(), sp.GetRequiredService<IBitacoraTecnica>()));
         s.AddSingleton<CreadorNotificador>(sp => new CreadorNotificadorSms(o.CarpetaSalidas,
             sp.GetRequiredService<ConfiguracionDemo>(), sp.GetRequiredService<IBitacoraTecnica>()));
-        s.AddSingleton<SelectorCanalNotificacion>();
+        s.AddSingleton<ISelectorCanalNotificacion, SelectorCanalNotificacion>();
         s.AddScoped<IObservadorEventos, ObservadorNotificaciones>();
         s.AddScoped<IObservadorEventos, ObservadorAuditoria>();
         s.AddScoped<IObservadorEventos, ObservadorMetricas>();
-        s.AddScoped<PublicadorEventos>();
-        s.AddScoped<ProcesadorOutbox>();
+        s.AddScoped<IPublicadorEventos, PublicadorEventos>();
+        s.AddScoped<IProcesadorOutbox, ProcesadorOutbox>();
 
         // ---- Salidas de documentos (Bridge). VistaPrevia la registra WinForms. ----
         s.AddSingleton<ISalidaDocumento>(_ => new SalidaArchivoTxt(Path.Combine(o.CarpetaSalidas, "comprobantes")));
 
         // ---- Casos de uso ----
         s.AddScoped<IServicioAutorizacion, ServicioAutorizacion>();
-        s.AddScoped<ServicioAutenticacion>();
-        s.AddScoped<ServicioCatalogo>();
-        s.AddScoped<ServicioClientes>();
-        s.AddScoped<ServicioPedidos>();
+        s.AddScoped<IServicioAutenticacion, ServicioAutenticacion>();
+        s.AddScoped<IServicioConsultas, ServicioConsultas>();   // lado de lectura (CQRS)
+        s.AddScoped<IServicioCatalogo, ServicioCatalogo>();
+        s.AddScoped<IServicioClientes, ServicioClientes>();
+        s.AddScoped<IServicioPedidos, ServicioPedidos>();
         s.AddScoped<RepositoriosConfirmacion>();
-        s.AddScoped<ConfirmacionPedidoFacade>();
-        s.AddScoped<ServicioLogistica>();
+        s.AddScoped<IConfirmacionPedido, ConfirmacionPedidoFacade>();
+        s.AddScoped<IServicioLogistica, ServicioLogistica>();
         s.AddScoped<DependenciasDevolucion>();
         s.AddScoped<ProcesarDevolucion, ProcesarDevolucionDefecto>();
         s.AddScoped<ProcesarDevolucion, ProcesarDevolucionArrepentimiento>();
-        s.AddScoped<ServicioDevoluciones>();
-        s.AddScoped<ServicioReportes>();
-        s.AddScoped<ServicioAdministracion>();
+        s.AddScoped<IServicioDevoluciones, ServicioDevoluciones>();
+        s.AddScoped<IServicioReportes, ServicioReportes>();
+        s.AddScoped<IServicioAdministracion, ServicioAdministracion>();
         return s;
     }
 }

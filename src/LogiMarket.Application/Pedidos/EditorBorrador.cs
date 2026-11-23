@@ -2,77 +2,142 @@ using LogiMarket.Application.Comun;
 using LogiMarket.Domain.Catalogo;
 using LogiMarket.Domain.Clientes;
 using LogiMarket.Domain.Pedidos;
+using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.Application.Pedidos;
 
 /// <summary>
 /// Sesión de edición del carrito/borrador en memoria. Usa Builder para crear el agregado y el Memento
-/// (<see cref="HistorialBorrador"/>) para deshacer/rehacer hasta 5 estados completos. Solo se capturan
-/// los cambios que tuvieron éxito.
+/// (<see cref="HistorialBorrador"/>) para deshacer/rehacer hasta 5 estados completos, INCLUIDO el carrito
+/// vacío: la primera línea y el vaciado también se pueden deshacer. Solo se registran cambios exitosos.
 /// </summary>
 public sealed class EditorBorrador
 {
-    private readonly ServicioValoracion _valoracion;
-    private Cliente? _clientePendiente;
-    private TipoEntrega _entregaPendiente = TipoEntrega.ESTANDAR;
+    private sealed record ClienteBorrador(int Id, string Nombre, string Email, string Telefono, CategoriaCliente Categoria);
 
-    public EditorBorrador(ServicioValoracion valoracion, Pedido? existente = null)
+    private readonly IServicioValoracion _valoracion;
+    private ClienteBorrador? _cliente;
+    private TipoEntrega _entrega = TipoEntrega.ESTANDAR;
+
+    /// <summary>
+    /// Agregado retenido cuando el carrito queda vacío. Si se deshace el vaciado se reutiliza el mismo
+    /// objeto, de modo que un borrador ya guardado conserva su identificador.
+    /// </summary>
+    private Pedido? _retenido;
+
+    public EditorBorrador(IServicioValoracion valoracion, Pedido? existente = null)
     {
         _valoracion = valoracion;
-        Pedido = existente;
         if (existente is not null && !existente.PermiteEdicion)
             throw new ExcepcionAplicacion("BORRADOR_NO_EDITABLE", $"El pedido {existente.Numero} está en estado {existente.Estado} y no es editable.");
+        Pedido = existente;
+        if (existente is not null) RecordarDatos(existente);
     }
 
     public Pedido? Pedido { get; private set; }
     public HistorialBorrador Historial { get; } = new();
-    public int PedidoId => Pedido?.Id ?? 0;
+    public int PedidoId => Pedido?.Id ?? _retenido?.Id ?? 0;
     public bool TieneCambiosSinGuardar { get; private set; }
-    public string ClienteNombre => Pedido?.ClienteNombre ?? _clientePendiente?.Nombre ?? "(sin cliente)";
-    public TipoEntrega Entrega => Pedido?.TipoEntrega ?? _entregaPendiente;
+    public bool EstaVacio => Pedido is null;
+    public string ClienteNombre => _cliente?.Nombre ?? "(sin cliente)";
+    public TipoEntrega Entrega => Pedido?.TipoEntrega ?? _entrega;
 
     public void SeleccionarCliente(Cliente cliente)
     {
-        if (Pedido is null) { _clientePendiente = cliente; return; }
+        if (Pedido is null) { _cliente = Datos(cliente); return; }
         Aplicar(p => p.CambiarCliente(cliente));
+    }
+
+    /// <summary>Selecciona el cliente a partir del DTO del lado de lectura.</summary>
+    public void SeleccionarCliente(Consultas.ClienteDto cliente)
+    {
+        if (!cliente.Activo)
+            throw new ExcepcionAplicacion("CLIENTE_INACTIVO", $"El cliente {cliente.Nombre} está inactivo.");
+        var categoria = Enum.Parse<CategoriaCliente>(cliente.Categoria);
+        if (Pedido is null) { _cliente = new ClienteBorrador(cliente.Id, cliente.Nombre, cliente.Email, cliente.Telefono, categoria); return; }
+        Aplicar(p => p.CambiarCliente(cliente.Id, cliente.Nombre, cliente.Email, cliente.Telefono, categoria));
     }
 
     public void CambiarEntrega(TipoEntrega entrega)
     {
-        if (Pedido is null) { _entregaPendiente = entrega; return; }
+        if (Pedido is null) { _entrega = entrega; return; }
         Aplicar(p => p.CambiarEntrega(entrega));
     }
 
     public void Agregar(IElementoCatalogo elemento, int cantidad)
     {
-        if (Pedido is null)
+        if (Pedido is not null)
         {
-            // Builder: impide crear un agregado sin cliente o sin líneas.
-            var builder = new PedidoBuilder().ConEntrega(_entregaPendiente).Agregar(elemento, cantidad);
-            if (_clientePendiente is not null) builder.ParaCliente(_clientePendiente);
-            Pedido = builder.Construir();
-            TieneCambiosSinGuardar = true;
+            Aplicar(p => p.AgregarLinea(elemento, cantidad));
             return;
         }
-        Aplicar(p => p.AgregarLinea(elemento, cantidad));
+
+        if (_retenido is not null)
+        {
+            // Carrito vaciado de un borrador existente: se reutiliza el agregado (conserva su id).
+            var vacio = _retenido;
+            CambiarAEstado(null, () =>
+            {
+                if (_cliente is not null)
+                    vacio.CambiarCliente(_cliente.Id, _cliente.Nombre, _cliente.Email, _cliente.Telefono, _cliente.Categoria);
+                vacio.CambiarEntrega(_entrega);
+                ReemplazarLineas(vacio, elemento, cantidad);
+                Pedido = vacio;
+                _retenido = null;
+            });
+            return;
+        }
+
+        // Builder: impide crear un agregado sin cliente o sin líneas.
+        var builder = new PedidoBuilder().ConEntrega(_entrega).Agregar(elemento, cantidad);
+        if (_cliente is not null)
+            builder.ParaCliente(_cliente.Id, _cliente.Nombre, _cliente.Categoria, _cliente.Email, _cliente.Telefono);
+        var nuevo = builder.Construir();
+        Historial.RegistrarAnterior(null); // el carrito vacío es un estado al que se puede volver
+        Pedido = nuevo;
+        RecordarDatos(nuevo);
+        TieneCambiosSinGuardar = true;
     }
 
     public void CambiarCantidad(string codigo, int cantidad) => Aplicar(p => p.CambiarCantidad(codigo, cantidad));
 
-    public void Quitar(string codigo) => Aplicar(p => p.QuitarLinea(codigo));
+    /// <summary>Quita una línea; si es la última, el carrito queda vacío (y se puede deshacer).</summary>
+    public void Quitar(string codigo)
+    {
+        if (Pedido is null) throw new ExcepcionAplicacion("BORRADOR_VACIO", "El carrito ya está vacío.");
+        if (Pedido.Lineas.Count > 1)
+        {
+            Aplicar(p => p.QuitarLinea(codigo));
+            return;
+        }
+        if (!Pedido.Lineas.Any(l => string.Equals(l.Codigo, codigo, StringComparison.OrdinalIgnoreCase)))
+            throw new ExcepcionAplicacion("LINEA_NO_EXISTE", $"El carrito no contiene la línea {codigo}.");
+        Vaciar();
+    }
+
+    /// <summary>Vacía el carrito conservando cliente y forma de entrega; se puede deshacer.</summary>
+    public void Vaciar()
+    {
+        if (Pedido is null) return;
+        Historial.RegistrarAnterior(Pedido.CrearMemento());
+        RecordarDatos(Pedido);
+        _retenido = Pedido;
+        Pedido = null;
+        TieneCambiosSinGuardar = true;
+    }
 
     public bool Deshacer()
     {
-        var ok = Pedido is not null && Historial.Deshacer(Pedido);
-        if (ok) TieneCambiosSinGuardar = true;
-        return ok;
+        if (!Historial.Deshacer(Pedido?.CrearMemento(), out var anterior)) return false;
+        AplicarEstado(anterior);
+        return true;
     }
 
     public bool Rehacer()
     {
-        var ok = Pedido is not null && Historial.Rehacer(Pedido);
-        if (ok) TieneCambiosSinGuardar = true;
-        return ok;
+        if (!Historial.Rehacer(Pedido?.CrearMemento(), out var siguiente)) return false;
+        AplicarEstado(siguiente);
+        return true;
     }
 
     public ResumenValoracion? Valorar() => Pedido is null ? null : _valoracion.Valorar(Pedido);
@@ -82,12 +147,71 @@ public sealed class EditorBorrador
     /// <summary>Al confirmar el pedido se bloquea el historial: no se puede deshacer un cobro ni el stock.</summary>
     public void BloquearPorConfirmacion() => Historial.Bloquear();
 
+    // ---------------- Internos ----------------
+
     private void Aplicar(Action<Pedido> cambio)
     {
         if (Pedido is null) throw new ExcepcionAplicacion("BORRADOR_VACIO", "Agregue primero un producto o kit.");
         var anterior = Pedido.CrearMemento();
         cambio(Pedido);                       // si lanza, no se registra el estado
         Historial.RegistrarAnterior(anterior);
+        RecordarDatos(Pedido);
         TieneCambiosSinGuardar = true;
     }
+
+    private void CambiarAEstado(PedidoMemento? anterior, Action cambio)
+    {
+        cambio();
+        Historial.RegistrarAnterior(anterior);
+        TieneCambiosSinGuardar = true;
+    }
+
+    /// <summary>Restaura un estado del historial: null = carrito vacío.</summary>
+    private void AplicarEstado(PedidoMemento? estado)
+    {
+        if (estado is null)
+        {
+            if (Pedido is not null)
+            {
+                RecordarDatos(Pedido);
+                _retenido = Pedido;
+                Pedido = null;
+            }
+        }
+        else if (Pedido is not null)
+        {
+            Pedido.Restaurar(estado);
+        }
+        else if (_retenido is not null)
+        {
+            _retenido.Restaurar(estado);
+            Pedido = _retenido;
+            _retenido = null;
+        }
+        else
+        {
+            Pedido = Pedido.DesdeMemento(estado, DateTime.Now, "sistema");
+        }
+        if (Pedido is not null) RecordarDatos(Pedido);
+        TieneCambiosSinGuardar = true;
+    }
+
+    private static void ReemplazarLineas(Pedido pedido, IElementoCatalogo elemento, int cantidad)
+    {
+        // Se agrega la nueva línea y luego se quitan las anteriores (nunca queda sin líneas).
+        var anteriores = pedido.Lineas.Select(l => l.Codigo).Where(c => !string.Equals(c, elemento.Codigo, StringComparison.OrdinalIgnoreCase)).ToList();
+        var existia = pedido.Lineas.Any(l => string.Equals(l.Codigo, elemento.Codigo, StringComparison.OrdinalIgnoreCase));
+        if (existia) pedido.CambiarCantidad(elemento.Codigo, cantidad);
+        else pedido.AgregarLinea(elemento, cantidad);
+        foreach (var codigo in anteriores) pedido.QuitarLinea(codigo);
+    }
+
+    private void RecordarDatos(Pedido p)
+    {
+        if (p.ClienteId != 0)
+            _cliente = new ClienteBorrador(p.ClienteId, p.ClienteNombre, p.ClienteEmail, p.ClienteTelefono, p.CategoriaCliente);
+        _entrega = p.TipoEntrega;
+    }
+
+    private static ClienteBorrador Datos(Cliente c) => new(c.Id, c.Nombre, c.Email, c.Telefono, c.Categoria);
 }

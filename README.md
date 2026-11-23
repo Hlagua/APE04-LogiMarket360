@@ -66,7 +66,11 @@ dotnet test LogiMarket360.sln
 
 Cada prueba de integración crea su propia base SQLite temporal (migrada y sembrada), por lo que las cifras
 oficiales (59.00 / 102.00 / 90.00, rechazo de KIT_TELETRABAJO×6, reembolso 54.00) se verifican sobre datos
-controlados. El nombre de cada prueba indica el caso de la matriz (P01–P38).
+controlados. El nombre de cada prueba indica el caso de la matriz (P01–P38). Las pruebas corren en serie porque
+`MetricasSesion` es un Singleton real.
+
+Cada ejecución genera la tabla de evidencia **entrada / esperado / obtenido** en
+`tests/LogiMarket.Tests/bin/Debug/net8.0/evidencias/matriz-esperado-obtenido.md`.
 
 ## Restablecer los datos de prueba de forma segura
 

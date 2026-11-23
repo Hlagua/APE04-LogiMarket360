@@ -1,5 +1,6 @@
 using LogiMarket.Application.Comun;
 using LogiMarket.Application.Puertos;
+using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.Application.Eventos;
 
@@ -10,16 +11,16 @@ public sealed record ResultadoProcesoOutbox(int Procesados, int Fallidos, IReadO
 /// observadores y los marca procesados. Si un observador falla, el evento queda pendiente (con intentos y
 /// error) y se recupera en una ejecución posterior. Un candado global evita el procesamiento duplicado.
 /// </summary>
-public sealed class ProcesadorOutbox
+public sealed class ProcesadorOutbox : IProcesadorOutbox
 {
     private static readonly SemaphoreSlim Candado = new(1, 1);
     private readonly IOutboxRepositorio _outbox;
-    private readonly PublicadorEventos _publicador;
+    private readonly IPublicadorEventos _publicador;
     private readonly IUnidadDeTrabajo _uow;
     private readonly IReloj _reloj;
     private readonly IBitacoraTecnica _bitacora;
 
-    public ProcesadorOutbox(IOutboxRepositorio outbox, PublicadorEventos publicador, IUnidadDeTrabajo uow,
+    public ProcesadorOutbox(IOutboxRepositorio outbox, IPublicadorEventos publicador, IUnidadDeTrabajo uow,
         IReloj reloj, IBitacoraTecnica bitacora)
     {
         _outbox = outbox;

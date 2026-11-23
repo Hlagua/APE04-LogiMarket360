@@ -3,6 +3,7 @@ using LogiMarket.Application.Comun;
 using LogiMarket.Application.Seguridad;
 using LogiMarket.WinForms.Infraestructura;
 using Microsoft.Extensions.DependencyInjection;
+using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.WinForms.Vistas;
 
@@ -59,7 +60,7 @@ public sealed class VistaDemo : VistaBase
     {
         await Ejecutor.Ejecutar(sp =>
         {
-            sp.GetRequiredService<ServicioAdministracion>().AplicarDemo(c =>
+            sp.GetRequiredService<IServicioAdministracion>().AplicarDemo(c =>
             {
                 c.ProveedorPago = (string)_proveedor.SelectedItem!;
                 c.CanalNotificacion = (string)_canal.SelectedItem!;
@@ -74,7 +75,7 @@ public sealed class VistaDemo : VistaBase
 
     private async Task ProcesarOutboxAsync()
     {
-        var (ok, r) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<ServicioAdministracion>().ProcesarOutboxAsync());
+        var (ok, r) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<IServicioAdministracion>().ProcesarOutboxAsync());
         if (!ok || r is null) return;
         _salida.Text = $"Procesados: {r.Procesados} | Fallidos: {r.Fallidos}{Environment.NewLine}{string.Join(Environment.NewLine, r.Detalle)}";
         await NotificarAsync(EventoVista.MetricasCambiadas);
@@ -84,7 +85,7 @@ public sealed class VistaDemo : VistaBase
     {
         if (!Ui.Confirmar("Se BORRARÁ la base de pruebas y se volverá a crear con los datos controlados de la guía " +
                           "(5 productos, 2 kits, 4 usuarios, 3 clientes). ¿Continuar?", "Restablecer base de pruebas")) return;
-        if (await Ejecutor.Ejecutar(sp => sp.GetRequiredService<ServicioAdministracion>().RestablecerBaseAsync()))
+        if (await Ejecutor.Ejecutar(sp => sp.GetRequiredService<IServicioAdministracion>().RestablecerBaseAsync()))
         {
             _salida.Text = "Base restablecida a los datos controlados.";
             await NotificarAsync(EventoVista.BaseRestablecida);

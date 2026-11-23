@@ -1,6 +1,7 @@
 using LogiMarket.Application.Seguridad;
 using LogiMarket.WinForms.Infraestructura;
 using Microsoft.Extensions.DependencyInjection;
+using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.WinForms.Formularios;
 
@@ -66,7 +67,7 @@ public sealed class FormLogin : Form
         if (_usuario.Text.Trim().Length == 0) { _error.Text = "Ingrese el usuario."; _usuario.Focus(); return; }
         if (_clave.Text.Length == 0) { _error.Text = "Ingrese la contraseña."; _clave.Focus(); return; }
         _entrar.Enabled = false;
-        var (ok, r) = await _ejecutor.Ejecutar(sp => sp.GetRequiredService<ServicioAutenticacion>().IniciarSesionAsync(_usuario.Text, _clave.Text));
+        var (ok, r) = await _ejecutor.Ejecutar(sp => sp.GetRequiredService<IServicioAutenticacion>().IniciarSesionAsync(_usuario.Text, _clave.Text));
         _entrar.Enabled = true;
         if (!ok || r is null) return;
         if (!r.Exito)

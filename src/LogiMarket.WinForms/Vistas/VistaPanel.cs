@@ -3,6 +3,7 @@ using LogiMarket.Application.Consultas;
 using LogiMarket.Application.Metricas;
 using LogiMarket.WinForms.Infraestructura;
 using Microsoft.Extensions.DependencyInjection;
+using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.WinForms.Vistas;
 
@@ -25,7 +26,7 @@ public sealed class VistaPanel : VistaBase
 
     public override async Task RefrescarAsync()
     {
-        var (ok, ind) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<ServicioAdministracion>().IndicadoresAsync());
+        var (ok, ind) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<IServicioConsultas>().IndicadoresAsync());
         if (!ok || ind is null) return;
         _tarjetas.Controls.Clear();
         AgregarTarjeta("Borradores", ind.Borradores.ToString());
@@ -40,7 +41,7 @@ public sealed class VistaPanel : VistaBase
         AgregarTarjeta("Stock bajo", ind.ProductosStockBajo.ToString());
         AgregarTarjeta("Outbox pendiente", ind.OutboxPendientes.ToString());
         _alertas.DataSource = ind.Alertas.Count == 0 ? new List<string> { "Sin alertas." } : ind.Alertas.ToList();
-        MostrarMetricas(Ejecutor.Singleton<MetricasSesion>().Instantanea());
+        MostrarMetricas(Ejecutor.Singleton<IMetricasSesion>().Instantanea());
     }
 
     private void MostrarMetricas(InstantaneaMetricas m) =>

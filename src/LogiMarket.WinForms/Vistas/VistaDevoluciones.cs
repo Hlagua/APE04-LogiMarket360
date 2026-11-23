@@ -6,6 +6,7 @@ using LogiMarket.Application.Seguridad;
 using LogiMarket.Domain.Devoluciones;
 using LogiMarket.WinForms.Infraestructura;
 using Microsoft.Extensions.DependencyInjection;
+using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.WinForms.Vistas;
 
@@ -37,7 +38,7 @@ public sealed class VistaDevoluciones : VistaBase
     public override async Task RefrescarAsync()
     {
         _procesar.Enabled = Puede(Operacion.ProcesarDevolucion);
-        var (ok, lista) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<ServicioPedidos>().ListarAsync());
+        var (ok, lista) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<IServicioConsultas>().PedidosAsync());
         if (ok && lista is not null)
             Ui.Enlazar(_grilla, lista.Where(p => p.Estado == "ENTREGADO" && !p.Devuelto), nameof(PedidoResumenDto.Id));
         Estimar();
@@ -64,8 +65,8 @@ public sealed class VistaDevoluciones : VistaBase
         var motivo = (MotivoDevolucion)_motivo.SelectedItem!;
         if (!Ui.Confirmar($"¿Procesar la devolución TOTAL de {p.Numero} por {motivo}? Si se acepta, se reintegra stock y se emite el reembolso (una sola vez).")) return;
         var solicitud = new SolicitudDevolucion(p.Id, motivo, _sinUso.Checked, _observacion.Text.Trim());
-        var (_, r) = await Ejecutor.Ejecutar(async sp => await Ejecutor.Singleton<InvocadorComandos>()
-            .EjecutarAsync(new ProcesarDevolucionCommand(sp.GetRequiredService<ServicioDevoluciones>(), solicitud)));
+        var (_, r) = await Ejecutor.Ejecutar(async sp => await Ejecutor.Singleton<IInvocadorComandos>()
+            .EjecutarAsync(new ProcesarDevolucionCommand(sp.GetRequiredService<IServicioDevoluciones>(), solicitud)));
         if (r is null) return;
         _resultado.Text = r is ResultadoDevolucion d
             ? $"{d}{Environment.NewLine}Pasos: {string.Join(" → ", d.Pasos)}{Environment.NewLine}Reembolso: {Ui.Usd(d.MontoReembolso)} ref {d.ReferenciaReembolso}"

@@ -1,6 +1,7 @@
 using LogiMarket.Application.Reportes;
 using LogiMarket.WinForms.Infraestructura;
 using Microsoft.Extensions.DependencyInjection;
+using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.WinForms.Vistas;
 
@@ -43,14 +44,14 @@ public sealed class VistaReportes : VistaBase
     public override Task RefrescarAsync()
     {
         using var scope = Ejecutor.Singleton<IServiceProvider>().CreateScope();
-        var medios = scope.ServiceProvider.GetRequiredService<ServicioReportes>().MediosDisponibles.ToList();
+        var medios = scope.ServiceProvider.GetRequiredService<IServicioReportes>().MediosDisponibles.ToList();
         if (_medio.Items.Count != medios.Count) { _medio.DataSource = medios; }
         return Task.CompletedTask;
     }
 
     private async Task FiltrarAsync()
     {
-        var (ok, r) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<ServicioReportes>().FiltrarPedidosAsync(_filtro.Text));
+        var (ok, r) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<IServicioReportes>().FiltrarPedidosAsync(_filtro.Text));
         Errores.SetError(_filtro, ok ? "" : "Revise la sintaxis del filtro");
         if (!ok || r is null) return;
         _arbol.Text = $"Árbol interpretado: {r.Arbol}  →  {r.Pedidos.Count} pedido(s)";
@@ -62,7 +63,7 @@ public sealed class VistaReportes : VistaBase
         if (_medio.SelectedItem is not string medio) return;
         var tipo = (TipoComprobante)_tipo.SelectedItem!;
         var id = (int)_pedido.Value;
-        var (ok, r) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<ServicioReportes>().EmitirComprobanteAsync(tipo, id, medio));
+        var (ok, r) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<IServicioReportes>().EmitirComprobanteAsync(tipo, id, medio));
         if (ok && r is not null) Ejecutor.Estado($"Comprobante {tipo} emitido por {r.Medio}: {r.Destino} ({r.Caracteres} caracteres)");
         if (ok && r is not null && r.Medio != SalidaVistaPrevia.NombreMedio)
             MessageBox.Show($"Archivo generado:\n{r.Destino}", "Comprobante TXT", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -70,7 +71,7 @@ public sealed class VistaReportes : VistaBase
 
     private async Task GenerarMasivaAsync()
     {
-        var (ok, r) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<ServicioReportes>().VistaMasivaAsync(1000));
+        var (ok, r) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<IServicioReportes>().VistaMasivaAsync(1000));
         if (!ok) return;
         var (filas, m) = r;
         Ui.Enlazar(_masiva, filas.Select((f, i) => new { Fila = i + 1, f.Sku, f.Nombre, f.Categoria, f.Stock, f.Cantidad, f.PrecioVenta,

@@ -4,6 +4,7 @@ using LogiMarket.Application.Logistica;
 using LogiMarket.Application.Pedidos;
 using LogiMarket.Application.Seguridad;
 using LogiMarket.Domain.Comun;
+using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.Application.Comandos;
 
@@ -17,11 +18,11 @@ public interface IComando
 
 public sealed class ConfirmarPedidoCommand : IComando
 {
-    private readonly ConfirmacionPedidoFacade _receptor;
+    private readonly IConfirmacionPedido _receptor;
     public int PedidoId { get; }
     public string ClaveIdempotencia { get; }
 
-    public ConfirmarPedidoCommand(ConfirmacionPedidoFacade receptor, int pedidoId, string claveIdempotencia)
+    public ConfirmarPedidoCommand(IConfirmacionPedido receptor, int pedidoId, string claveIdempotencia)
     {
         _receptor = receptor;
         PedidoId = pedidoId;
@@ -33,17 +34,22 @@ public sealed class ConfirmarPedidoCommand : IComando
     public async Task<ResultadoOperacion> EjecutarAsync(CancellationToken ct = default) =>
         await _receptor.ConfirmarAsync(PedidoId, ClaveIdempotencia, ct);
 
-    /// <summary>Clave por defecto: una por pedido, de modo que un reintento no vuelve a cobrar.</summary>
-    public static string ClavePorDefecto(int pedidoId) => $"CONF-{pedidoId:000000}";
+    /// <summary>
+    /// Clave por defecto: una por pedido (un reintento no vuelve a cobrar). Incluye la fecha de creación para
+    /// que, tras restablecer la base de pruebas y reutilizarse los ids, un pedido nuevo no herede la
+    /// autorización que la pasarela recuerda para un pedido anterior con el mismo número.
+    /// </summary>
+    public static string ClavePorDefecto(int pedidoId, DateTime fechaCreacion) =>
+        $"CONF-{pedidoId:000000}-{fechaCreacion:yyyyMMddHHmmssfff}";
 }
 
 public sealed class CancelarPedidoCommand : IComando
 {
-    private readonly ServicioPedidos _receptor;
+    private readonly IServicioPedidos _receptor;
     private readonly int _pedidoId;
     private readonly string _motivo;
 
-    public CancelarPedidoCommand(ServicioPedidos receptor, int pedidoId, string motivo)
+    public CancelarPedidoCommand(IServicioPedidos receptor, int pedidoId, string motivo)
     {
         _receptor = receptor;
         _pedidoId = pedidoId;
@@ -57,10 +63,10 @@ public sealed class CancelarPedidoCommand : IComando
 
 public sealed class DespacharPedidoCommand : IComando
 {
-    private readonly ServicioLogistica _receptor;
+    private readonly IServicioLogistica _receptor;
     private readonly int _pedidoId;
 
-    public DespacharPedidoCommand(ServicioLogistica receptor, int pedidoId)
+    public DespacharPedidoCommand(IServicioLogistica receptor, int pedidoId)
     {
         _receptor = receptor;
         _pedidoId = pedidoId;
@@ -73,10 +79,10 @@ public sealed class DespacharPedidoCommand : IComando
 
 public sealed class EntregarPedidoCommand : IComando
 {
-    private readonly ServicioLogistica _receptor;
+    private readonly IServicioLogistica _receptor;
     private readonly int _pedidoId;
 
-    public EntregarPedidoCommand(ServicioLogistica receptor, int pedidoId)
+    public EntregarPedidoCommand(IServicioLogistica receptor, int pedidoId)
     {
         _receptor = receptor;
         _pedidoId = pedidoId;
@@ -89,10 +95,10 @@ public sealed class EntregarPedidoCommand : IComando
 
 public sealed class ProcesarDevolucionCommand : IComando
 {
-    private readonly ServicioDevoluciones _receptor;
+    private readonly IServicioDevoluciones _receptor;
     private readonly SolicitudDevolucion _solicitud;
 
-    public ProcesarDevolucionCommand(ServicioDevoluciones receptor, SolicitudDevolucion solicitud)
+    public ProcesarDevolucionCommand(IServicioDevoluciones receptor, SolicitudDevolucion solicitud)
     {
         _receptor = receptor;
         _solicitud = solicitud;
@@ -109,7 +115,7 @@ public sealed record RegistroComando(DateTime Fecha, string Usuario, string Coma
 /// Invocador: ejecuta cualquier comando (botón de la UI o prueba automatizada), convierte excepciones en
 /// resultados y registra comando, entrada y resultado. No conoce a los receptores.
 /// </summary>
-public sealed class InvocadorComandos
+public sealed class InvocadorComandos : IInvocadorComandos
 {
     private readonly List<RegistroComando> _historial = new();
     private readonly object _candado = new();

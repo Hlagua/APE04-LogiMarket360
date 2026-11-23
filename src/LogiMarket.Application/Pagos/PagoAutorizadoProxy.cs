@@ -14,12 +14,12 @@ public sealed class PagoAutorizadoProxy : IPasarelaPago
 {
     private readonly IPasarelaPago _real;
     private readonly ISesionActual _sesion;
-    private readonly PoliticaPermisos _permisos;
+    private readonly IPoliticaPermisos _permisos;
     private readonly IBitacoraTecnica _bitacora;
-    private readonly MetricasSesion _metricas;
+    private readonly IMetricasSesion _metricas;
 
-    public PagoAutorizadoProxy(IPasarelaPago real, ISesionActual sesion, PoliticaPermisos permisos,
-        IBitacoraTecnica bitacora, MetricasSesion metricas)
+    public PagoAutorizadoProxy(IPasarelaPago real, ISesionActual sesion, IPoliticaPermisos permisos,
+        IBitacoraTecnica bitacora, IMetricasSesion metricas)
     {
         _real = real;
         _sesion = sesion;

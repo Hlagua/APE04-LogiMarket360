@@ -1,5 +1,5 @@
 using LogiMarket.Application.Comun;
-using LogiMarket.Application.Consultas;
+using LogiMarket.Application.Contratos;
 using LogiMarket.Application.Puertos;
 using LogiMarket.Application.Seguridad;
 using LogiMarket.Domain.Comun;
@@ -8,51 +8,35 @@ using LogiMarket.Domain.Pedidos;
 
 namespace LogiMarket.Application.Pedidos;
 
-/// <summary>Casos de uso de borradores, validación, cancelación, clonación (Prototype) y consultas.</summary>
-public sealed class ServicioPedidos
+/// <summary>Comandos de pedidos: borradores, validación (Chain), cancelación (State) y clonación (Prototype).</summary>
+public sealed class ServicioPedidos : IServicioPedidos
 {
     private readonly IPedidoRepositorio _pedidos;
     private readonly IClienteRepositorio _clientes;
     private readonly IProductoRepositorio _productos;
     private readonly IAuditoriaRepositorio _auditoria;
-    private readonly IConsultasLectura _consultas;
     private readonly IUnidadDeTrabajo _uow;
     private readonly IServicioAutorizacion _autorizacion;
     private readonly ISesionActual _sesion;
-    private readonly ServicioValoracion _valoracion;
-    private readonly CadenaValidacionPedido _cadena;
+    private readonly IServicioValoracion _valoracion;
+    private readonly ICadenaValidacionPedido _cadena;
     private readonly IReloj _reloj;
 
     public ServicioPedidos(IPedidoRepositorio pedidos, IClienteRepositorio clientes, IProductoRepositorio productos,
-        IAuditoriaRepositorio auditoria, IConsultasLectura consultas, IUnidadDeTrabajo uow,
-        IServicioAutorizacion autorizacion, ISesionActual sesion, ServicioValoracion valoracion,
-        CadenaValidacionPedido cadena, IReloj reloj)
+        IAuditoriaRepositorio auditoria, IUnidadDeTrabajo uow,
+        IServicioAutorizacion autorizacion, ISesionActual sesion, IServicioValoracion valoracion,
+        ICadenaValidacionPedido cadena, IReloj reloj)
     {
         _pedidos = pedidos;
         _clientes = clientes;
         _productos = productos;
         _auditoria = auditoria;
-        _consultas = consultas;
         _uow = uow;
         _autorizacion = autorizacion;
         _sesion = sesion;
         _valoracion = valoracion;
         _cadena = cadena;
         _reloj = reloj;
-    }
-
-    // ---------------- Consultas ----------------
-
-    public Task<IReadOnlyList<PedidoResumenDto>> ListarAsync(CancellationToken ct = default)
-    {
-        _autorizacion.Exigir(Operacion.ConsultarInformacion);
-        return _consultas.PedidosAsync(ct);
-    }
-
-    public async Task<PedidoCompletoDto> DetalleAsync(int id, CancellationToken ct = default)
-    {
-        _autorizacion.Exigir(Operacion.ConsultarInformacion);
-        return await _consultas.PedidoAsync(id, ct) ?? throw new ExcepcionAplicacion("PEDIDO_NO_EXISTE", $"No existe el pedido {id}.");
     }
 
     // ---------------- Borradores ----------------

@@ -29,6 +29,7 @@ public interface IVistaColega
 
 public interface IMediadorVistas
 {
+    IReadOnlyList<string> Trazas { get; }
     void Registrar(IVistaColega vista);
     Task NotificarAsync(IVistaColega? emisor, EventoVista evento, int pedidoId = 0);
 }

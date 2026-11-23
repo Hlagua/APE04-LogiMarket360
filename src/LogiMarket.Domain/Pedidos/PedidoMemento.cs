@@ -36,14 +36,16 @@ public sealed class PedidoMemento
 }
 
 /// <summary>
-/// Caretaker del Memento: hasta 5 estados para deshacer y su pila de rehacer. Al confirmar el pedido
-/// el historial se bloquea y limpia (no se puede deshacer un cobro ni un descuento de stock).
+/// Caretaker del Memento: hasta 5 estados para deshacer y su pila de rehacer. Un estado puede ser
+/// <c>null</c> = carrito vacío (antes de la primera línea o tras quitar la última), de modo que deshacer
+/// también regresa al carrito vacío. Al confirmar el pedido el historial se bloquea y limpia (no se puede
+/// deshacer un cobro ni un descuento de stock).
 /// </summary>
 public sealed class HistorialBorrador
 {
-    public const int Capacidad = 5;
-    private readonly LinkedList<PedidoMemento> _deshacer = new();
-    private readonly Stack<PedidoMemento> _rehacer = new();
+    public const int Capacidad = ParametrosNegocio.CapacidadHistorialBorrador;
+    private readonly LinkedList<PedidoMemento?> _deshacer = new();
+    private readonly Stack<PedidoMemento?> _rehacer = new();
 
     public bool Bloqueado { get; private set; }
     public int CantidadDeshacer => _deshacer.Count;
@@ -54,8 +56,8 @@ public sealed class HistorialBorrador
     /// <summary>Guarda el estado actual ANTES de un cambio.</summary>
     public void Capturar(Pedido pedido) => RegistrarAnterior(pedido.CrearMemento());
 
-    /// <summary>Registra un estado capturado previamente (útil para capturar solo si el cambio tuvo éxito).</summary>
-    public void RegistrarAnterior(PedidoMemento memento)
+    /// <summary>Registra un estado capturado previamente (null = carrito vacío).</summary>
+    public void RegistrarAnterior(PedidoMemento? memento)
     {
         ExigirDesbloqueado();
         _deshacer.AddLast(memento);
@@ -63,22 +65,40 @@ public sealed class HistorialBorrador
         _rehacer.Clear();
     }
 
-    public bool Deshacer(Pedido pedido)
+    /// <summary>Entrega el estado anterior y guarda el actual para rehacer.</summary>
+    public bool Deshacer(PedidoMemento? actual, out PedidoMemento? anterior)
     {
+        anterior = null;
         if (!PuedeDeshacer) return false;
-        var anterior = _deshacer.Last!.Value;
+        anterior = _deshacer.Last!.Value;
         _deshacer.RemoveLast();
-        _rehacer.Push(pedido.CrearMemento());
-        pedido.Restaurar(anterior);
+        _rehacer.Push(actual);
         return true;
     }
 
-    public bool Rehacer(Pedido pedido)
+    /// <summary>Entrega el estado siguiente y guarda el actual para deshacer.</summary>
+    public bool Rehacer(PedidoMemento? actual, out PedidoMemento? siguiente)
     {
+        siguiente = null;
         if (!PuedeRehacer) return false;
-        _deshacer.AddLast(pedido.CrearMemento());
+        _deshacer.AddLast(actual);
         if (_deshacer.Count > Capacidad) _deshacer.RemoveFirst();
-        pedido.Restaurar(_rehacer.Pop());
+        siguiente = _rehacer.Pop();
+        return true;
+    }
+
+    /// <summary>Atajo cuando el pedido nunca pasa por el carrito vacío.</summary>
+    public bool Deshacer(Pedido pedido) => Aplicar(pedido, Deshacer(pedido.CrearMemento(), out var m), m);
+
+    /// <summary>Atajo cuando el pedido nunca pasa por el carrito vacío.</summary>
+    public bool Rehacer(Pedido pedido) => Aplicar(pedido, Rehacer(pedido.CrearMemento(), out var m), m);
+
+    private static bool Aplicar(Pedido pedido, bool hubo, PedidoMemento? memento)
+    {
+        if (!hubo) return false;
+        if (memento is null)
+            throw new InvalidOperationException("El estado guardado es el carrito vacío: use EditorBorrador para restaurarlo.");
+        pedido.Restaurar(memento);
         return true;
     }
 

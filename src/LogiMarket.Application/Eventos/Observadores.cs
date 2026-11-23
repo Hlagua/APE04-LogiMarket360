@@ -4,6 +4,7 @@ using LogiMarket.Application.Metricas;
 using LogiMarket.Application.Notificaciones;
 using LogiMarket.Application.Puertos;
 using LogiMarket.Domain.Eventos;
+using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.Application.Eventos;
 
@@ -38,7 +39,7 @@ public interface IObservadorEventos
 }
 
 /// <summary>Sujeto del Observer: notifica a todos los suscriptores, en orden de suscripción.</summary>
-public sealed class PublicadorEventos
+public sealed class PublicadorEventos : IPublicadorEventos
 {
     private readonly List<IObservadorEventos> _observadores = new();
 
@@ -60,28 +61,52 @@ public sealed class PublicadorEventos
     }
 }
 
-/// <summary>Observador 1: envía el aviso por el canal configurado (usa el Factory Method).</summary>
+/// <summary>
+/// Observador 1: envía el aviso por el canal configurado (usa el Factory Method). Es idempotente por
+/// evento: apenas el aviso sale, guarda una constancia (categoría NOTIFICACION) en su propia escritura.
+/// Si después falla otro observador y el evento se reintenta, el aviso no se vuelve a enviar.
+/// </summary>
 public sealed class ObservadorNotificaciones : IObservadorEventos
 {
-    private readonly SelectorCanalNotificacion _selector;
-    private readonly MetricasSesion _metricas;
+    public const string Categoria = "NOTIFICACION";
+    private readonly ISelectorCanalNotificacion _selector;
+    private readonly IMetricasSesion _metricas;
     private readonly IBitacoraTecnica _bitacora;
+    private readonly IAuditoriaRepositorio _auditoria;
+    private readonly IUnidadDeTrabajo _uow;
+    private readonly IReloj _reloj;
 
-    public ObservadorNotificaciones(SelectorCanalNotificacion selector, MetricasSesion metricas, IBitacoraTecnica bitacora)
+    public ObservadorNotificaciones(ISelectorCanalNotificacion selector, IMetricasSesion metricas, IBitacoraTecnica bitacora,
+        IAuditoriaRepositorio auditoria, IUnidadDeTrabajo uow, IReloj reloj)
     {
         _selector = selector;
         _metricas = metricas;
         _bitacora = bitacora;
+        _auditoria = auditoria;
+        _uow = uow;
+        _reloj = reloj;
     }
 
     public string Nombre => "Notificación";
 
     public async Task ActualizarAsync(EventoNegocio evento, CancellationToken ct = default)
     {
+        var deOutbox = evento.EventoOutboxId > 0;
+        if (deOutbox && await _auditoria.ExisteParaEventoAsync(evento.EventoOutboxId, Categoria, ct))
+        {
+            _bitacora.Registrar("OBSERVER", $"Aviso del evento {evento.EventoOutboxId} ya enviado: no se repite.");
+            return;
+        }
+
         var creador = _selector.Actual;
         var detalle = await creador.NotificarAsync(evento, ct);
         _bitacora.Registrar("OBSERVER", $"Notificación {evento.Tipo} evento={evento.EventoOutboxId} por {creador.GetType().Name}: {detalle}");
         _metricas.RegistrarNotificacion();
+
+        if (!deOutbox) return;
+        _auditoria.Agregar(new Domain.Eventos.Auditoria(_reloj.Ahora, "sistema", Categoria, evento.Tipo,
+            $"Aviso por {creador.Canal}: {detalle}", evento.EventoOutboxId));
+        await _uow.GuardarCambiosAsync(ct); // constancia inmediata, independiente del resto de observadores
     }
 }
 
@@ -112,9 +137,9 @@ public sealed class ObservadorAuditoria : IObservadorEventos
 /// <summary>Observador 3: actualiza las métricas de sesión (Singleton), una vez por evento.</summary>
 public sealed class ObservadorMetricas : IObservadorEventos
 {
-    private readonly MetricasSesion _metricas;
+    private readonly IMetricasSesion _metricas;
 
-    public ObservadorMetricas(MetricasSesion metricas) => _metricas = metricas;
+    public ObservadorMetricas(IMetricasSesion metricas) => _metricas = metricas;
 
     public string Nombre => "Métricas";
 

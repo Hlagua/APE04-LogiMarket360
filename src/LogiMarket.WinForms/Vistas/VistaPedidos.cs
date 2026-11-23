@@ -5,6 +5,7 @@ using LogiMarket.Application.Seguridad;
 using LogiMarket.Domain.Pedidos;
 using LogiMarket.WinForms.Infraestructura;
 using Microsoft.Extensions.DependencyInjection;
+using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.WinForms.Vistas;
 
@@ -50,7 +51,7 @@ public sealed class VistaPedidos : VistaBase
 
     public override async Task RefrescarAsync()
     {
-        var (ok, lista) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<ServicioPedidos>().ListarAsync());
+        var (ok, lista) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<IServicioConsultas>().PedidosAsync());
         if (!ok || lista is null) return;
         _todos = lista;
         Filtrar();
@@ -68,7 +69,7 @@ public sealed class VistaPedidos : VistaBase
     private async Task DetalleAsync()
     {
         if (Seleccionado is not { } id) return;
-        var (ok, d) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<ServicioPedidos>().DetalleAsync(id));
+        var (ok, d) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<IServicioConsultas>().PedidoAsync(id));
         if (!ok || d is null) return;
         Ui.Enlazar(_lineas, d.Lineas);
         Ui.Enlazar(_historial, d.Historial);
@@ -88,7 +89,7 @@ public sealed class VistaPedidos : VistaBase
     private async Task DuplicarAsync()
     {
         if (Seleccionado is not { } id) return;
-        var (_, r) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<ServicioPedidos>().ClonarComoBorradorAsync(id));
+        var (_, r) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<IServicioPedidos>().ClonarComoBorradorAsync(id));
         if (Ejecutor.Mostrar(r, true)) await NotificarAsync(EventoVista.BorradorGuardado, r!.Valor);
         await RefrescarAsync();
     }
@@ -96,7 +97,7 @@ public sealed class VistaPedidos : VistaBase
     private async Task DiagnosticarAsync()
     {
         if (Seleccionado is not { } id) return;
-        var (ok, v) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<ServicioPedidos>().DiagnosticarAsync(id));
+        var (ok, v) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<IServicioPedidos>().DiagnosticarAsync(id));
         if (ok && v is not null)
             MessageBox.Show($"{v}\n\nEslabones evaluados: {string.Join(" → ", v.Recorrido)}", "Cadena de validación",
                 MessageBoxButtons.OK, v.EsValido ? MessageBoxIcon.Information : MessageBoxIcon.Warning);
@@ -106,8 +107,8 @@ public sealed class VistaPedidos : VistaBase
     {
         if (Seleccionado is not { } id) return;
         if (!Ui.Confirmar($"¿Cancelar definitivamente el pedido PED-{id:000000}? Esta acción no se puede revertir.")) return;
-        var (_, r) = await Ejecutor.Ejecutar(async sp => await Ejecutor.Singleton<InvocadorComandos>()
-            .EjecutarAsync(new CancelarPedidoCommand(sp.GetRequiredService<ServicioPedidos>(), id, "Cancelado desde la pantalla de pedidos")));
+        var (_, r) = await Ejecutor.Ejecutar(async sp => await Ejecutor.Singleton<IInvocadorComandos>()
+            .EjecutarAsync(new CancelarPedidoCommand(sp.GetRequiredService<IServicioPedidos>(), id, "Cancelado desde la pantalla de pedidos")));
         if (Ejecutor.Mostrar(r)) await NotificarAsync(EventoVista.PedidoCambiado, id);
         await RefrescarAsync();
     }

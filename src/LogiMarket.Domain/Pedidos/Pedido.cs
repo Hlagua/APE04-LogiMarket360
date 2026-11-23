@@ -88,10 +88,14 @@ public class Pedido : IPrototipo<Pedido>
         InvalidarValoracion();
     }
 
+    /// <summary>Invariante: un pedido siempre tiene al menos una línea (quitar la última = vaciar el carrito).</summary>
     public void QuitarLinea(string codigo)
     {
         EstadoActual.ExigirEdicion();
-        _lineas.Remove(ObtenerLinea(codigo));
+        var linea = ObtenerLinea(codigo);
+        if (_lineas.Count == 1)
+            throw new ExcepcionDominio("PEDIDO_SIN_LINEAS", "Un pedido no puede quedar sin líneas: vacíe el carrito en su lugar.");
+        _lineas.Remove(linea);
         InvalidarValoracion();
     }
 
@@ -119,6 +123,14 @@ public class Pedido : IPrototipo<Pedido>
         InvalidarValoracion();
     }
 
+    /// <summary>Cambia el cliente a partir de sus datos (borrador sin entidad Cliente a mano).</summary>
+    public void CambiarCliente(int id, string nombre, string email, string telefono, CategoriaCliente categoria)
+    {
+        EstadoActual.ExigirEdicion();
+        AsignarCliente(id, Guardia.Texto(nombre, "cliente", 120), email, telefono, categoria);
+        InvalidarValoracion();
+    }
+
     internal void AsignarCliente(int id, string nombre, string email, string telefono, CategoriaCliente categoria)
     {
         ClienteId = id;
@@ -143,7 +155,7 @@ public class Pedido : IPrototipo<Pedido>
 
     // ---------------- Valoración (Strategy + tarifa de la familia de entrega) ----------------
 
-    public ResultadoDescuento AplicarValoracion(CalculadoraDescuento calculadora, decimal tarifaEnvio)
+    public ResultadoDescuento AplicarValoracion(ICalculadoraDescuento calculadora, decimal tarifaEnvio)
     {
         if (!EstadoActual.PermiteValoracion)
             throw new ExcepcionDominio("TRANSICION_INVALIDA", $"No se puede recalcular un pedido en estado {Estado}.");
@@ -224,11 +236,22 @@ public class Pedido : IPrototipo<Pedido>
     public void Restaurar(PedidoMemento memento)
     {
         EstadoActual.ExigirEdicion();
+        if (memento.Lineas.Count == 0)
+            throw new ExcepcionDominio("PEDIDO_SIN_LINEAS", "El estado a restaurar no tiene líneas.");
         AsignarCliente(memento.ClienteId, memento.ClienteNombre, memento.ClienteEmail, memento.ClienteTelefono, memento.Categoria);
         TipoEntrega = memento.TipoEntrega;
         _lineas.Clear();
         _lineas.AddRange(memento.Lineas.Select(l => l.Clonar()));
         InvalidarValoracion();
+    }
+
+    /// <summary>Reconstruye un BORRADOR nuevo desde un estado guardado (deshacer tras vaciar el carrito).</summary>
+    public static Pedido DesdeMemento(PedidoMemento memento, DateTime fecha, string usuario)
+    {
+        if (memento.Lineas.Count == 0)
+            throw new ExcepcionDominio("PEDIDO_SIN_LINEAS", "El estado a restaurar no tiene líneas.");
+        return new Pedido(memento.ClienteId, memento.ClienteNombre, memento.ClienteEmail, memento.ClienteTelefono,
+            memento.Categoria, memento.TipoEntrega, memento.Lineas.Select(l => l.Clonar()), fecha, usuario);
     }
 
     // ---------------- Prototype ----------------

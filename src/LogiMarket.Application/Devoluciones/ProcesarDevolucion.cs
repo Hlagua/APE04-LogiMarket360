@@ -8,6 +8,7 @@ using LogiMarket.Domain.Devoluciones;
 using LogiMarket.Domain.Eventos;
 using LogiMarket.Domain.Inventario;
 using LogiMarket.Domain.Pedidos;
+using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.Application.Devoluciones;
 
@@ -26,7 +27,7 @@ public sealed class ResultadoDevolucion : ResultadoOperacion
 public sealed record DependenciasDevolucion(IPedidoRepositorio Pedidos, IProductoRepositorio Productos,
     IDevolucionRepositorio Devoluciones, IPagoRepositorio Pagos, IMovimientoInventarioRepositorio Movimientos,
     IOutboxRepositorio Outbox, IAuditoriaRepositorio Auditoria, IUnidadDeTrabajo Uow, IServicioReembolso Reembolso,
-    ISesionActual Sesion, IReloj Reloj, ProcesadorOutbox ProcesadorOutbox, MetricasSesion Metricas);
+    ISesionActual Sesion, IReloj Reloj, IProcesadorOutbox ProcesadorOutbox, IMetricasSesion Metricas);
 
 /// <summary>
 /// Patrón Template Method. <see cref="EjecutarAsync"/> fija la secuencia invariante:
@@ -150,7 +151,7 @@ public sealed class ProcesarDevolucionDefecto : ProcesarDevolucion
 {
     public ProcesarDevolucionDefecto(DependenciasDevolucion d) : base(d) { }
     public override MotivoDevolucion Motivo => MotivoDevolucion.DEFECTO;
-    protected override int DiasMaximos => 30;
+    protected override int DiasMaximos => ParametrosNegocio.DiasMaximosDefecto;
     protected override string? InspeccionarCondicion(SolicitudDevolucion solicitud) => null;
 }
 
@@ -159,14 +160,14 @@ public sealed class ProcesarDevolucionArrepentimiento : ProcesarDevolucion
 {
     public ProcesarDevolucionArrepentimiento(DependenciasDevolucion d) : base(d) { }
     public override MotivoDevolucion Motivo => MotivoDevolucion.ARREPENTIMIENTO;
-    protected override int DiasMaximos => 7;
+    protected override int DiasMaximos => ParametrosNegocio.DiasMaximosArrepentimiento;
 
     protected override string? InspeccionarCondicion(SolicitudDevolucion solicitud) =>
         solicitud.ProductoSinUso ? null : "Por arrepentimiento solo se aceptan productos sin uso.";
 }
 
 /// <summary>Punto de entrada protegido: elige la variante del Template Method según el motivo.</summary>
-public sealed class ServicioDevoluciones
+public sealed class ServicioDevoluciones : IServicioDevoluciones
 {
     private readonly IServicioAutorizacion _autorizacion;
     private readonly IReadOnlyDictionary<MotivoDevolucion, ProcesarDevolucion> _variantes;

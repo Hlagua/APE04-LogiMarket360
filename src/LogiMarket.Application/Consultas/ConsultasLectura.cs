@@ -41,9 +41,18 @@ public sealed record IndicadoresDto(int Borradores, int Validados, int Pagados, 
     int Cancelados, int Devueltos, decimal VentasCobradas, decimal Reembolsado, int ProductosStockBajo,
     int OutboxPendientes, IReadOnlyList<string> Alertas);
 
-/// <summary>Puerto de consultas (implementado con EF Core AsNoTracking en Infrastructure).</summary>
+/// <summary>Catálogo completo para armar el Composite en el lado de lectura (entidades sin seguimiento).</summary>
+public sealed record CatalogoLectura(IReadOnlyList<Domain.Catalogo.Producto> Productos, IReadOnlyList<Domain.Catalogo.Kit> Kits);
+
+/// <summary>
+/// Puerto del LADO DE LECTURA (CQRS básico), implementado con EF Core AsNoTracking en Infrastructure.
+/// Nunca modifica datos. El lado de escritura usa los repositorios por agregado de Puertos/Repositorios.cs.
+/// </summary>
 public interface IConsultasLectura
 {
+    Task<CatalogoLectura> CatalogoAsync(CancellationToken ct = default);
+    Task<ClienteDto?> ClienteAsync(int id, CancellationToken ct = default);
+    Task<DespachoDto?> DespachoPorGuiaAsync(string guia, CancellationToken ct = default);
     Task<IReadOnlyList<ProductoDto>> ProductosAsync(string? texto, CancellationToken ct = default);
     Task<IReadOnlyList<ClienteDto>> ClientesAsync(string? texto, CancellationToken ct = default);
     Task<IReadOnlyList<PedidoResumenDto>> PedidosAsync(CancellationToken ct = default);

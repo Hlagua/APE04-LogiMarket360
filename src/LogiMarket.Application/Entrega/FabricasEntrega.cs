@@ -1,5 +1,6 @@
 using LogiMarket.Domain.Comun;
 using LogiMarket.Domain.Pedidos;
+using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.Application.Entrega;
 
@@ -54,13 +55,13 @@ public sealed class EntregaEstandarFactory : IFabricaEntrega
     private sealed class TarifaEstandar : ICalculadoraTarifa
     {
         public string Familia => NombreFamilia;
-        public decimal Calcular(decimal pesoKg) => 5.00m;
+        public decimal Calcular(decimal pesoKg) => ParametrosNegocio.TarifaEstandar;
     }
 
     private sealed class PlazoEstandar : ICalculadoraPlazo
     {
         public string Familia => NombreFamilia;
-        public int Dias => 3;
+        public int Dias => ParametrosNegocio.PlazoEstandarDias;
         public DateTime EstimarEntrega(DateTime desde) => desde.Date.AddDays(Dias);
     }
 
@@ -93,13 +94,13 @@ public sealed class EntregaExpresFactory : IFabricaEntrega
     private sealed class TarifaExpres : ICalculadoraTarifa
     {
         public string Familia => NombreFamilia;
-        public decimal Calcular(decimal pesoKg) => 12.00m;
+        public decimal Calcular(decimal pesoKg) => ParametrosNegocio.TarifaExpres;
     }
 
     private sealed class PlazoExpres : ICalculadoraPlazo
     {
         public string Familia => NombreFamilia;
-        public int Dias => 1;
+        public int Dias => ParametrosNegocio.PlazoExpresDias;
         public DateTime EstimarEntrega(DateTime desde) => desde.Date.AddDays(Dias);
     }
 
@@ -132,7 +133,7 @@ internal static class FamiliaCoherente
 public sealed record PaqueteEntrega(string Familia, decimal Tarifa, int PlazoDias, ICalculadoraPlazo Plazo, IGeneradorGuia Generador);
 
 /// <summary>Selecciona la fábrica concreta según el tipo de entrega del pedido.</summary>
-public sealed class ProveedorFabricasEntrega
+public sealed class ProveedorFabricasEntrega : IProveedorFabricasEntrega
 {
     private readonly IReadOnlyDictionary<TipoEntrega, IFabricaEntrega> _fabricas;
 

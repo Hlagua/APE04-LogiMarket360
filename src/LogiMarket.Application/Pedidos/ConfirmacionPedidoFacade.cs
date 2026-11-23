@@ -7,6 +7,7 @@ using LogiMarket.Domain.Comun;
 using LogiMarket.Domain.Eventos;
 using LogiMarket.Domain.Inventario;
 using LogiMarket.Domain.Pedidos;
+using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.Application.Pedidos;
 
@@ -29,22 +30,22 @@ public sealed record RepositoriosConfirmacion(IPedidoRepositorio Pedidos, IClien
 /// valoración (Strategy + Abstract Factory), cobro (Proxy → Decorator → Adapter), stock, persistencia y
 /// Outbox en una sola transacción. No contiene SQL ni reglas de descuento: delega en sus colaboradores.
 /// </summary>
-public sealed class ConfirmacionPedidoFacade
+public sealed class ConfirmacionPedidoFacade : IConfirmacionPedido
 {
     private readonly IServicioAutorizacion _autorizacion;
     private readonly ISesionActual _sesion;
     private readonly RepositoriosConfirmacion _repos;
     private readonly IUnidadDeTrabajo _uow;
     private readonly IPasarelaPago _pasarela;
-    private readonly ServicioValoracion _valoracion;
-    private readonly CadenaValidacionPedido _cadena;
-    private readonly ProcesadorOutbox _procesadorOutbox;
-    private readonly MetricasSesion _metricas;
+    private readonly IServicioValoracion _valoracion;
+    private readonly ICadenaValidacionPedido _cadena;
+    private readonly IProcesadorOutbox _procesadorOutbox;
+    private readonly IMetricasSesion _metricas;
     private readonly IReloj _reloj;
 
     public ConfirmacionPedidoFacade(IServicioAutorizacion autorizacion, ISesionActual sesion, RepositoriosConfirmacion repos,
-        IUnidadDeTrabajo uow, IPasarelaPago pasarela, ServicioValoracion valoracion, CadenaValidacionPedido cadena,
-        ProcesadorOutbox procesadorOutbox, MetricasSesion metricas, IReloj reloj)
+        IUnidadDeTrabajo uow, IPasarelaPago pasarela, IServicioValoracion valoracion, ICadenaValidacionPedido cadena,
+        IProcesadorOutbox procesadorOutbox, IMetricasSesion metricas, IReloj reloj)
     {
         _autorizacion = autorizacion;
         _sesion = sesion;
@@ -143,12 +144,20 @@ public sealed class ConfirmacionPedidoFacade
                 MotivoMovimiento.VENTA, pedido.Numero, ahora, usuario));
         }
 
-        // 4) State: VALIDADO → PAGADO (rechaza estados inválidos) y cobro protegido
+        // 4) State: VALIDADO → PAGADO (rechaza estados inválidos)
         pedido.RegistrarPago(clave, ahora, usuario);
+
+        // 5) Se escriben estado y stock ANTES de cobrar: un conflicto de concurrencia o una restricción
+        //    única se detecta aquí, sin haber cobrado. Nada se confirma hasta el commit final.
+        await _uow.GuardarCambiosAsync(ct);
+
+        // 6) Cobro protegido (Proxy → Decorator → Adapter). La pasarela es idempotente por clave: si algo
+        //    falla después de aprobar y la transacción se revierte, el reintento con la misma clave recibe la
+        //    misma autorización y no se cobra dos veces.
         var cobro = await _pasarela.CobrarAsync(pedido.Total, clave, ct);
         if (!cobro.Aprobado) throw new ExcepcionCobroRechazado($"Cobro rechazado por {cobro.Proveedor}: {cobro.Mensaje}");
 
-        // 5) Pago + Outbox + auditoría en la MISMA transacción
+        // 7) Pago + Outbox + auditoría en la MISMA transacción
         _repos.Pagos.Agregar(Pago.Aprobado(pedido.Id, cobro.Referencia, clave, pedido.Total, cobro.Proveedor, cobro.CorrelacionId, ahora));
         _repos.Outbox.Agregar(SerializadorEventos.AOutbox(new PedidoPagado(pedido.Id, pedido.ClienteNombre,
             pedido.ClienteEmail, pedido.ClienteTelefono, ahora, pedido.Total, cobro.Referencia)));

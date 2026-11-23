@@ -34,17 +34,17 @@ public sealed class Vip10 : IPoliticaDescuento
 {
     public string Codigo => "VIP";
     public int Prioridad => 10;
-    public decimal Tasa => 0.10m;
+    public decimal Tasa => ParametrosNegocio.TasaVip;
     public bool Aplica(ContextoDescuento contexto) => contexto.Categoria == CategoriaCliente.VIP;
 }
 
 /// <summary>MAYORISTA: 15 % si hay al menos 10 unidades físicas finales, sin importar la categoría.</summary>
 public sealed class Mayorista15 : IPoliticaDescuento
 {
-    public const int UnidadesMinimas = 10;
+    public const int UnidadesMinimas = ParametrosNegocio.UnidadesMinimasMayorista;
     public string Codigo => "MAYORISTA";
     public int Prioridad => 20;
-    public decimal Tasa => 0.15m;
+    public decimal Tasa => ParametrosNegocio.TasaMayorista;
     public bool Aplica(ContextoDescuento contexto) => contexto.UnidadesFisicas >= UnidadesMinimas;
 }
 
@@ -52,7 +52,14 @@ public sealed class Mayorista15 : IPoliticaDescuento
 /// Contexto del Strategy. Depende solo de la interfaz: agregar una política nueva = registrar otra
 /// implementación, sin editar ninguna cadena de condiciones aquí (OCP).
 /// </summary>
-public sealed class CalculadoraDescuento
+public interface ICalculadoraDescuento
+{
+    IReadOnlyList<IPoliticaDescuento> Politicas { get; }
+    IPoliticaDescuento Seleccionar(ContextoDescuento contexto);
+    ResultadoDescuento Calcular(ContextoDescuento contexto);
+}
+
+public sealed class CalculadoraDescuento : ICalculadoraDescuento
 {
     private readonly IReadOnlyList<IPoliticaDescuento> _politicas;
 

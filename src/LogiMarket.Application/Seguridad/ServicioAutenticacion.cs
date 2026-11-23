@@ -1,10 +1,11 @@
 using LogiMarket.Application.Comun;
 using LogiMarket.Application.Puertos;
 using LogiMarket.Domain.Eventos;
+using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.Application.Seguridad;
 
-public sealed class ServicioAutenticacion
+public sealed class ServicioAutenticacion : IServicioAutenticacion
 {
     private readonly IUsuarioRepositorio _usuarios;
     private readonly IHasherContrasena _hasher;

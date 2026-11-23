@@ -14,6 +14,7 @@ using LogiMarket.Tests.Aplicacion;
 using LogiMarket.Tests.Soporte;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.Tests.Integracion;
 
@@ -47,6 +48,10 @@ public class FlujosNegocioTests
         var r = await e.Confirmar(id);
 
         Assert.True(r.Exito, r.Mensaje);
+        Evidencia.Registrar("P02", "Ana VIP, KIT_TELETRABAJO x1, ESTANDAR, base recién preparada",
+            "Total 59.00; P01=7 P02=4 P03=19; PAGADO; 1 pago",
+            $"Total {Dinero.Formatear(r.Total)}; P01={await e.Stock("P01")} P02={await e.Stock("P02")} P03={await e.Stock("P03")}; " +
+            $"{await e.Db(db => db.Pedidos.Where(p => p.Id == id).Select(p => p.Estado).SingleAsync())}; {await e.Db(db => db.Pagos.CountAsync())} pago");
         Assert.Equal(59.00m, r.Total);
         Assert.Equal((7, 4, 19), (await e.Stock("P01"), await e.Stock("P02"), await e.Stock("P03")));
         var pedido = await e.Db(db => db.Pedidos.SingleAsync(p => p.Id == id));
@@ -62,6 +67,9 @@ public class FlujosNegocioTests
         await e.IniciarSesion("ventas");
         var r = await e.Confirmar(await e.CrearBorrador("Luis", TipoEntrega.EXPRES, ("P04", 2), ("P05", 2)));
         Assert.True(r.Exito, r.Mensaje);
+        Evidencia.Registrar("P03", "Luis NORMAL, P04 x2 + P05 x2, EXPRES",
+            "Total 102.00; P04=2 P05=28; 1 pago",
+            $"Total {Dinero.Formatear(r.Total)}; P04={await e.Stock("P04")} P05={await e.Stock("P05")}; {await e.Db(db => db.Pagos.CountAsync())} pago");
         Assert.Equal(102.00m, r.Total);
         Assert.Equal((2, 28), (await e.Stock("P04"), await e.Stock("P05")));
         Assert.Equal(1, await e.Db(db => db.Pagos.CountAsync()));
@@ -75,6 +83,9 @@ public class FlujosNegocioTests
         var id = await e.CrearBorrador("Carmen", TipoEntrega.ESTANDAR, ("P03", 10));
         var r = await e.Confirmar(id);
         Assert.True(r.Exito, r.Mensaje);
+        Evidencia.Registrar("P04", "Carmen MAYORISTA, P03 x10, ESTANDAR",
+            "Total 90.00; descuento 15.00; P03=10",
+            $"Total {Dinero.Formatear(r.Total)}; descuento {Dinero.Formatear(await e.Db(db => db.Pedidos.Where(p => p.Id == id).Select(p => p.Descuento).SingleAsync()))}; P03={await e.Stock("P03")}");
         Assert.Equal(90.00m, r.Total);
         Assert.Equal(15.00m, await e.Db(db => db.Pedidos.Where(p => p.Id == id).Select(p => p.Descuento).SingleAsync()));
         Assert.Equal(10, await e.Stock("P03"));
@@ -89,6 +100,9 @@ public class FlujosNegocioTests
         var r = await e.Confirmar(id);
 
         Assert.False(r.Exito);
+        Evidencia.Registrar("P05", "KIT_TELETRABAJO x6 con stock inicial",
+            "Rechazo STOCK_INSUFICIENTE por P02; 0 pagos; P02=5",
+            $"Rechazo {r.Codigo} por {(r.Mensaje.Contains("P02") ? "P02" : "?")}; {await e.Db(db => db.Pagos.CountAsync())} pagos; P02={await e.Stock("P02")}");
         Assert.Equal("STOCK_INSUFICIENTE", r.Codigo);
         Assert.Contains("P02", r.Mensaje);
         await AfirmarSinEfectos(e, id, EstadoPedido.BORRADOR);
@@ -126,6 +140,10 @@ public class FlujosNegocioTests
 
         Assert.True(repetido.Exito);
         Assert.True(repetido.EsRepeticion);
+        Evidencia.Registrar("P07", "Confirmar dos veces con la clave CLAVE-ANA",
+            "Resultado original; 1 pago; 1 salida de P01",
+            $"{(repetido.EsRepeticion && primero.ReferenciaPago == repetido.ReferenciaPago ? "Resultado original" : "Nuevo resultado")}; " +
+            $"{await e.Db(db => db.Pagos.CountAsync())} pago; {await e.Db(db => db.MovimientosInventario.CountAsync(m => m.Sku == "P01" && m.Cantidad < 0))} salida de P01");
         Assert.Equal(primero.ReferenciaPago, repetido.ReferenciaPago);
         Assert.Equal(1, await e.Db(db => db.Pagos.CountAsync()));
         Assert.Equal(1, await e.Db(db => db.MovimientosInventario.CountAsync(m => m.Sku == "P01" && m.Cantidad < 0)));
@@ -146,13 +164,13 @@ public class FlujosNegocioTests
         await e.Confirmar(id);
         var historialAntes = await e.Db(db => db.PedidoHistorial.CountAsync(h => h.PedidoId == id));
 
-        var cancelar = await e.Unico<InvocadorComandos>().EjecutarAsync(
-            new CancelarPedidoCommand(e.Proveedor.CreateScope().ServiceProvider.GetRequiredService<ServicioPedidos>(), id, "prueba"));
+        var cancelar = await e.Unico<IInvocadorComandos>().EjecutarAsync(
+            new CancelarPedidoCommand(e.Proveedor.CreateScope().ServiceProvider.GetRequiredService<IServicioPedidos>(), id, "prueba"));
         Assert.Equal("TRANSICION_INVALIDA", cancelar.Codigo);
 
         using (var scope = e.Proveedor.CreateScope())
         {
-            var editor = await Assert.ThrowsAsync<ExcepcionAplicacion>(() => scope.ServiceProvider.GetRequiredService<ServicioPedidos>().AbrirEditorAsync(id));
+            var editor = await Assert.ThrowsAsync<ExcepcionAplicacion>(() => scope.ServiceProvider.GetRequiredService<IServicioPedidos>().AbrirEditorAsync(id));
             Assert.Equal("BORRADOR_NO_EDITABLE", editor.Codigo);
             var pedido = await scope.ServiceProvider.GetRequiredService<IPedidoRepositorio>().ObtenerAsync(id);
             Assert.Throws<ExcepcionDominio>(() => pedido!.ActualizarPrecioLinea(CatalogoPrueba.Elemento("KIT_TELETRABAJO")));
@@ -160,7 +178,7 @@ public class FlujosNegocioTests
 
         // Cambiar el precio actual del catálogo no altera la instantánea del pedido pagado.
         await e.IniciarSesion("admin");
-        await e.Usar<Application.Catalogo.ServicioCatalogo, ResultadoOperacion>(s =>
+        await e.Usar<IServicioCatalogo, ResultadoOperacion>(s =>
             s.ActualizarProductoAsync(new Application.Catalogo.ProductoEdicion("P01", "Mouse USB", "Periféricos", "", 99m, 0.2m, 0)));
         var p = await e.Db(db => db.Pedidos.Include(x => x.Lineas).SingleAsync(x => x.Id == id));
         Assert.Equal((EstadoPedido.PAGADO, 59.00m, 60.00m), (p.Estado, p.Total, p.Lineas.Single().PrecioUnitario));
@@ -177,19 +195,19 @@ public class FlujosNegocioTests
         var sinPago = await e.CrearBorrador("Luis", TipoEntrega.ESTANDAR, ("P05", 1));
 
         // VENTAS no puede despachar (autorización en Application, no en botones).
-        await Assert.ThrowsAsync<AccesoDenegadoException>(() => e.Usar<ServicioLogistica, ResultadoOperacion<string>>(s => s.DespacharAsync(pagado)));
+        await Assert.ThrowsAsync<AccesoDenegadoException>(() => e.Usar<IServicioLogistica, ResultadoOperacion<string>>(s => s.DespacharAsync(pagado)));
 
         await e.IniciarSesion("bodega");
-        var invalido = await Assert.ThrowsAsync<ExcepcionDominio>(() => e.Usar<ServicioLogistica, ResultadoOperacion<string>>(s => s.DespacharAsync(sinPago)));
+        var invalido = await Assert.ThrowsAsync<ExcepcionDominio>(() => e.Usar<IServicioLogistica, ResultadoOperacion<string>>(s => s.DespacharAsync(sinPago)));
         Assert.Equal("TRANSICION_INVALIDA", invalido.Codigo);
         Assert.Equal(EstadoPedido.BORRADOR, await e.Db(db => db.Pedidos.Where(p => p.Id == sinPago).Select(p => p.Estado).SingleAsync()));
         Assert.Equal(0, await e.Db(db => db.Despachos.CountAsync(d => d.PedidoId == sinPago)));
 
-        var despacho = await e.Usar<ServicioLogistica, ResultadoOperacion<string>>(s => s.DespacharAsync(pagado));
+        var despacho = await e.Usar<IServicioLogistica, ResultadoOperacion<string>>(s => s.DespacharAsync(pagado));
         Assert.StartsWith("EXP-", despacho.Valor);
-        await e.Usar<ServicioLogistica, ResultadoOperacion>(s => s.EntregarAsync(pagado));
+        await e.Usar<IServicioLogistica, ResultadoOperacion>(s => s.EntregarAsync(pagado));
         Assert.Equal(EstadoPedido.ENTREGADO, await e.Db(db => db.Pedidos.Where(p => p.Id == pagado).Select(p => p.Estado).SingleAsync()));
-        Assert.Contains("Entregado", await e.Usar<ServicioLogistica, string>(s => s.SeguimientoAsync(despacho.Valor!)));
+        Assert.Contains("Entregado", await e.Usar<IServicioConsultas, string>(s => s.SeguimientoAsync(despacho.Valor!)));
     }
 
     [Fact(DisplayName = "P10 Cerrar y reabrir: pedido, stock, pago y auditoría persisten en SQLite")]
@@ -207,16 +225,16 @@ public class FlujosNegocioTests
         {
             using (var s = sp1.CreateScope()) await s.ServiceProvider.GetRequiredService<IInicializadorBaseDatos>().InicializarAsync();
             using (var s = sp1.CreateScope())
-                await s.ServiceProvider.GetRequiredService<Application.Seguridad.ServicioAutenticacion>().IniciarSesionAsync("ventas", "Ventas123!");
+                await s.ServiceProvider.GetRequiredService<IServicioAutenticacion>().IniciarSesionAsync("ventas", "Ventas123!");
             var e1 = sp1;
             using var scope = e1.CreateScope();
             var sp = scope.ServiceProvider;
-            var editor = sp.GetRequiredService<ServicioPedidos>().NuevoEditor();
-            editor.SeleccionarCliente((await sp.GetRequiredService<IClienteRepositorio>().BuscarAsync("Ana")).Single());
-            editor.Agregar(await sp.GetRequiredService<Application.Catalogo.ServicioCatalogo>().ObtenerElementoAsync("KIT_TELETRABAJO"), 1);
-            id = (await sp.GetRequiredService<ServicioPedidos>().GuardarBorradorAsync(editor)).Valor;
+            var editor = sp.GetRequiredService<IServicioPedidos>().NuevoEditor();
+            editor.SeleccionarCliente((await sp.GetRequiredService<IServicioConsultas>().ClientesAsync("Ana")).Single());
+            editor.Agregar(await sp.GetRequiredService<IServicioConsultas>().ElementoAsync("KIT_TELETRABAJO"), 1);
+            id = (await sp.GetRequiredService<IServicioPedidos>().GuardarBorradorAsync(editor)).Valor;
             using var scope2 = e1.CreateScope();
-            Assert.True((await scope2.ServiceProvider.GetRequiredService<ConfirmacionPedidoFacade>().ConfirmarAsync(id, "P10")).Exito);
+            Assert.True((await scope2.ServiceProvider.GetRequiredService<IConfirmacionPedido>().ConfirmarAsync(id, "P10")).Exito);
         }
         Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
 
@@ -257,10 +275,10 @@ public class FlujosNegocioTests
         await using var e = await EntornoPrueba.CrearAsync();
         await e.IniciarSesion("ventas");
         var id = await e.CrearBorrador("Luis", TipoEntrega.EXPRES, ("P04", 2), ("P05", 2));
-        var invocador = e.Unico<InvocadorComandos>();
+        var invocador = e.Unico<IInvocadorComandos>();
         using var scope = e.Proveedor.CreateScope();
-        var comando = new ConfirmarPedidoCommand(scope.ServiceProvider.GetRequiredService<ConfirmacionPedidoFacade>(), id,
-            ConfirmarPedidoCommand.ClavePorDefecto(id));
+        var comando = new ConfirmarPedidoCommand(scope.ServiceProvider.GetRequiredService<IConfirmacionPedido>(), id,
+            await e.ClaveDefecto(id));
 
         var r1 = await invocador.EjecutarAsync(comando);  // "botón"
         var r2 = await invocador.EjecutarAsync(comando);  // reintento de "prueba"
@@ -277,7 +295,7 @@ public class FlujosNegocioTests
     {
         await using var e = await EntornoPrueba.CrearAsync();
         await e.IniciarSesion("ventas");
-        var metricas = e.Unico<MetricasSesion>();
+        var metricas = e.Unico<IMetricasSesion>();
         var id = await e.CrearBorrador("Ana", TipoEntrega.ESTANDAR, ("KIT_TELETRABAJO", 1));
         await e.Confirmar(id);
 
@@ -287,10 +305,10 @@ public class FlujosNegocioTests
         Assert.Contains("ana@ejemplo.test", File.ReadAllText(Path.Combine(e.CarpetaSalidas, "notificaciones.log")));
 
         // Reprocesar no duplica (el evento ya está marcado).
-        var otra = await e.Usar<ProcesadorOutbox, ResultadoProcesoOutbox>(p => p.ProcesarPendientesAsync());
+        var otra = await e.Usar<IProcesadorOutbox, ResultadoProcesoOutbox>(p => p.ProcesarPendientesAsync());
         Assert.Equal(0, otra.Procesados);
         Assert.Equal(1, metricas.Instantanea().Notificaciones);
-        Assert.Equal(new[] { "Notificación", "Auditoría", "Métricas" }, e.Proveedor.CreateScope().ServiceProvider.GetRequiredService<PublicadorEventos>().Suscriptores);
+        Assert.Equal(new[] { "Notificación", "Auditoría", "Métricas" }, e.Proveedor.CreateScope().ServiceProvider.GetRequiredService<IPublicadorEventos>().Suscriptores);
     }
 
     [Fact(DisplayName = "P33 Template Method: defecto día 20 aceptado; arrepentimiento día 10 rechazado sin efectos")]
@@ -340,6 +358,10 @@ public class FlujosNegocioTests
         var repetida = await Devolver(e, id, MotivoDevolucion.DEFECTO);
 
         Assert.True(r.Exito, r.Mensaje);
+        Evidencia.Registrar("P35", "Ana entregada, devolución DEFECTO día 5 y repetición",
+            "Reembolso 54.00; repetición DEVOLUCION_DUPLICADA; P01=8 P02=5 P03=20; 1 devolución",
+            $"Reembolso {Dinero.Formatear(r.MontoReembolso)}; repetición {repetida.Codigo}; P01={await e.Stock("P01")} P02={await e.Stock("P02")} P03={await e.Stock("P03")}; " +
+            $"{await e.Db(db => db.Devoluciones.CountAsync())} devolución");
         Assert.Equal(54.00m, r.MontoReembolso);
         Assert.Equal("DEVOLUCION_DUPLICADA", repetida.Codigo);
         Assert.Equal((8, 5, 20), (await e.Stock("P01"), await e.Stock("P02"), await e.Stock("P03")));
@@ -352,13 +374,16 @@ public class FlujosNegocioTests
     {
         await using var e = await EntornoPrueba.CrearAsync();
         await e.IniciarSesion("admin");
-        await e.Usar<Application.Catalogo.ServicioCatalogo, ResultadoOperacion>(s => s.AjustarStockAsync("P04", 1, "Preparación P36"));
+        await e.Usar<IServicioCatalogo, ResultadoOperacion>(s => s.AjustarStockAsync("P04", 1, "Preparación P36"));
         await e.IniciarSesion("ventas");
         var a = await e.CrearBorrador("Ana", TipoEntrega.ESTANDAR, ("P04", 1));
         var b = await e.CrearBorrador("Luis", TipoEntrega.ESTANDAR, ("P04", 1));
 
         var resultados = await Task.WhenAll(Task.Run(() => e.Confirmar(a)), Task.Run(() => e.Confirmar(b)));
 
+        Evidencia.Registrar("P36", "Dos cobros simultáneos de P04 con stock 1",
+            "1 aprobado; stock P04=0; 1 pago",
+            $"{resultados.Count(r => r.Exito)} aprobado; stock P04={await e.Stock("P04")}; {await e.Db(db => db.Pagos.CountAsync())} pago");
         Assert.Equal(1, resultados.Count(r => r.Exito));
         Assert.Contains(resultados, r => !r.Exito && r.Codigo is "STOCK_INSUFICIENTE" or "CONFLICTO_CONCURRENCIA");
         Assert.Equal(0, await e.Stock("P04"));
@@ -383,8 +408,8 @@ public class FlujosNegocioTests
         Assert.Equal(0, await e.Db(db => db.Auditorias.CountAsync(a => a.Categoria == ObservadorAuditoria.Categoria)));
 
         demo.ForzarFalloNotificador = false;
-        var recuperado = await e.Usar<ProcesadorOutbox, ResultadoProcesoOutbox>(p => p.ProcesarPendientesAsync()); // procesador "reiniciado"
-        var otraVez = await e.Usar<ProcesadorOutbox, ResultadoProcesoOutbox>(p => p.ProcesarPendientesAsync());
+        var recuperado = await e.Usar<IProcesadorOutbox, ResultadoProcesoOutbox>(p => p.ProcesarPendientesAsync()); // procesador "reiniciado"
+        var otraVez = await e.Usar<IProcesadorOutbox, ResultadoProcesoOutbox>(p => p.ProcesarPendientesAsync());
 
         Assert.Equal(1, recuperado.Procesados);
         Assert.Equal(0, otraVez.Procesados);
@@ -414,17 +439,17 @@ public class FlujosNegocioTests
     public async Task Seguridad_Permisos()
     {
         await using var e = await EntornoPrueba.CrearAsync();
-        var malo = await e.Usar<Application.Seguridad.ServicioAutenticacion, ResultadoOperacion<Application.Seguridad.UsuarioSesion>>(
+        var malo = await e.Usar<IServicioAutenticacion, ResultadoOperacion<Application.Seguridad.UsuarioSesion>>(
             s => s.IniciarSesionAsync("ventas", "incorrecta"));
         Assert.Equal("CREDENCIALES_INVALIDAS", malo.Codigo);
 
         await e.IniciarSesion("ventas");
         var id = await e.CrearBorrador("Ana", TipoEntrega.ESTANDAR, ("P01", 1));
         await e.IniciarSesion("consulta");
-        Assert.Throws<AccesoDenegadoException>(() => e.Proveedor.CreateScope().ServiceProvider.GetRequiredService<ServicioPedidos>().NuevoEditor());
+        Assert.Throws<AccesoDenegadoException>(() => e.Proveedor.CreateScope().ServiceProvider.GetRequiredService<IServicioPedidos>().NuevoEditor());
         var r = await e.Confirmar(id);
         Assert.Equal("ACCESO_DENEGADO", r.Codigo);
-        Assert.Equal(2, e.Unico<MetricasSesion>().Instantanea().OperacionesDenegadas); // NuevoEditor + Confirmar, sin duplicar
+        Assert.Equal(2, e.Unico<IMetricasSesion>().Instantanea().OperacionesDenegadas); // NuevoEditor + Confirmar, sin duplicar
         Assert.Empty(e.Unico<IBitacoraTecnica>().Entradas("PAGO"));
         Assert.Equal(8, await e.Stock("P01"));
     }
@@ -434,13 +459,13 @@ public class FlujosNegocioTests
     {
         await using var e = await EntornoPrueba.CrearAsync();
         await e.IniciarSesion("admin");
-        var crear = await e.Usar<Application.Catalogo.ServicioCatalogo, ResultadoOperacion>(s =>
+        var crear = await e.Usar<IServicioCatalogo, ResultadoOperacion>(s =>
             s.CrearKitAsync("KIT_GAMER", "Kit Gamer", new[] { ("KIT_TELETRABAJO", 1), ("P04", 1) }));
         Assert.True(crear.Exito, crear.Mensaje);
-        var kits = await e.Usar<Application.Catalogo.ServicioCatalogo, IReadOnlyList<Application.Catalogo.KitDto>>(s => s.ListarKitsAsync());
+        var kits = await e.Usar<IServicioConsultas, IReadOnlyList<Application.Catalogo.KitDto>>(s => s.KitsAsync());
         Assert.Equal(100.00m, kits.Single(k => k.Codigo == "KIT_GAMER").Precio);
 
-        var ciclo = await Assert.ThrowsAsync<ExcepcionDominio>(() => e.Usar<Application.Catalogo.ServicioCatalogo, ResultadoOperacion>(s =>
+        var ciclo = await Assert.ThrowsAsync<ExcepcionDominio>(() => e.Usar<IServicioCatalogo, ResultadoOperacion>(s =>
             s.AgregarComponenteAsync("KIT_OFICINA", "KIT_GAMER", 1)));
         Assert.Equal("KIT_CICLO", ciclo.Codigo);
         Assert.Equal(2, await e.Db(db => db.Kits.Where(k => k.Codigo == "KIT_OFICINA").SelectMany(k => k.Componentes).CountAsync()));
@@ -463,11 +488,11 @@ public class FlujosNegocioTests
         var id = await e.CrearBorrador(cliente, TipoEntrega.ESTANDAR, lineas);
         Assert.True((await e.Confirmar(id)).Exito);
         await e.IniciarSesion("bodega");
-        await e.Usar<ServicioLogistica, ResultadoOperacion<string>>(s => s.DespacharAsync(id));
-        await e.Usar<ServicioLogistica, ResultadoOperacion>(s => s.EntregarAsync(id));
+        await e.Usar<IServicioLogistica, ResultadoOperacion<string>>(s => s.DespacharAsync(id));
+        await e.Usar<IServicioLogistica, ResultadoOperacion>(s => s.EntregarAsync(id));
         return id;
     }
 
     private static Task<ResultadoDevolucion> Devolver(EntornoPrueba e, int id, MotivoDevolucion motivo, bool sinUso = true) =>
-        e.Usar<ServicioDevoluciones, ResultadoDevolucion>(s => s.SolicitarAsync(new SolicitudDevolucion(id, motivo, sinUso, "prueba")));
+        e.Usar<IServicioDevoluciones, ResultadoDevolucion>(s => s.SolicitarAsync(new SolicitudDevolucion(id, motivo, sinUso, "prueba")));
 }

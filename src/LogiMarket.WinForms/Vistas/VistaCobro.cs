@@ -6,6 +6,7 @@ using LogiMarket.Application.Pedidos;
 using LogiMarket.Application.Seguridad;
 using LogiMarket.WinForms.Infraestructura;
 using Microsoft.Extensions.DependencyInjection;
+using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.WinForms.Vistas;
 
@@ -37,7 +38,7 @@ public sealed class VistaCobro : VistaBase
     public override async Task RefrescarAsync()
     {
         var seleccionado = _pedido.SelectedValue;
-        var (ok, lista) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<ServicioPedidos>().ListarAsync());
+        var (ok, lista) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<IServicioConsultas>().PedidosAsync());
         if (ok && lista is not null)
         {
             _pedido.DisplayMember = "Texto";
@@ -66,9 +67,9 @@ public sealed class VistaCobro : VistaBase
     private async Task MostrarImportesAsync()
     {
         if (PedidoId is not { } id) { _importes.Text = "No hay pedidos en BORRADOR, VALIDADO o PAGADO."; return; }
-        _clave.Text = ConfirmarPedidoCommand.ClavePorDefecto(id);
-        var (ok, d) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<ServicioPedidos>().DetalleAsync(id));
+        var (ok, d) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<IServicioConsultas>().PedidoAsync(id));
         if (!ok || d is null) return;
+        _clave.Text = ConfirmarPedidoCommand.ClavePorDefecto(id, d.Resumen.FechaCreacion);
         var r = d.Resumen;
         _importes.Text = $"Subtotal {Ui.Usd(r.Subtotal)}  −  Descuento {r.Politica} {Ui.Usd(r.Descuento)}  +  Envío {r.Entrega} {Ui.Usd(r.Tarifa)}  =  TOTAL {Ui.Usd(r.Total)}";
     }
@@ -77,7 +78,7 @@ public sealed class VistaCobro : VistaBase
     {
         if (!_proveedor.Enabled || _proveedor.SelectedItem is not string p || p == Ejecutor.Singleton<ConfiguracionDemo>().ProveedorPago) return;
         using var scope = Ejecutor.Singleton<IServiceProvider>().CreateScope();
-        scope.ServiceProvider.GetRequiredService<ServicioAdministracion>().AplicarDemo(c => c.ProveedorPago = p);
+        scope.ServiceProvider.GetRequiredService<IServicioAdministracion>().AplicarDemo(c => c.ProveedorPago = p);
         Ejecutor.Estado($"Proveedor de cobro simulado: {p}");
     }
 
@@ -88,8 +89,8 @@ public sealed class VistaCobro : VistaBase
         _confirmar.Enabled = false;
         try
         {
-            var (_, r) = await Ejecutor.Ejecutar(async sp => await Ejecutor.Singleton<InvocadorComandos>()
-                .EjecutarAsync(new ConfirmarPedidoCommand(sp.GetRequiredService<ConfirmacionPedidoFacade>(), id, _clave.Text.Trim())));
+            var (_, r) = await Ejecutor.Ejecutar(async sp => await Ejecutor.Singleton<IInvocadorComandos>()
+                .EjecutarAsync(new ConfirmarPedidoCommand(sp.GetRequiredService<IConfirmacionPedido>(), id, _clave.Text.Trim())));
             if (r is null) return;
             _resultado.Text = $"{r}{Environment.NewLine}{Environment.NewLine}LOG de cobro:{Environment.NewLine}" +
                 string.Join(Environment.NewLine, Ejecutor.Singleton<IBitacoraTecnica>().Entradas("PAGO").TakeLast(4));

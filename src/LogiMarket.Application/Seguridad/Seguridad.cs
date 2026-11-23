@@ -44,8 +44,14 @@ public enum Operacion
     AdministrarDemo
 }
 
+public interface IPoliticaPermisos
+{
+    bool Permite(Rol? rol, Operacion operacion);
+    IEnumerable<Rol> RolesPara(Operacion operacion);
+}
+
 /// <summary>Matriz rol → operaciones. Es la política de seguridad real (no los botones de la UI).</summary>
-public sealed class PoliticaPermisos
+public sealed class PoliticaPermisos : IPoliticaPermisos
 {
     private static readonly Rol[] Todos = { Rol.ADMIN, Rol.VENTAS, Rol.BODEGA, Rol.CONSULTA };
     private static readonly Rol[] Ventas = { Rol.ADMIN, Rol.VENTAS };
@@ -87,11 +93,11 @@ public interface IServicioAutorizacion
 public sealed class ServicioAutorizacion : IServicioAutorizacion
 {
     private readonly ISesionActual _sesion;
-    private readonly PoliticaPermisos _politica;
+    private readonly IPoliticaPermisos _politica;
     private readonly IBitacoraTecnica _bitacora;
-    private readonly Metricas.MetricasSesion _metricas;
+    private readonly Metricas.IMetricasSesion _metricas;
 
-    public ServicioAutorizacion(ISesionActual sesion, PoliticaPermisos politica, IBitacoraTecnica bitacora, Metricas.MetricasSesion metricas)
+    public ServicioAutorizacion(ISesionActual sesion, IPoliticaPermisos politica, IBitacoraTecnica bitacora, Metricas.IMetricasSesion metricas)
     {
         _sesion = sesion;
         _politica = politica;

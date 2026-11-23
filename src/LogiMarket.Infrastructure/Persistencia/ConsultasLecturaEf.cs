@@ -11,6 +11,23 @@ public sealed class ConsultasLecturaEf : IConsultasLectura
 
     public ConsultasLecturaEf(LogiMarketDbContext db) => _db = db;
 
+    public async Task<CatalogoLectura> CatalogoAsync(CancellationToken ct = default) =>
+        new(await _db.Productos.AsNoTracking().OrderBy(p => p.Sku).ToListAsync(ct),
+            await _db.Kits.AsNoTracking().Include(k => k.Componentes).OrderBy(k => k.Codigo).ToListAsync(ct));
+
+    public async Task<ClienteDto?> ClienteAsync(int id, CancellationToken ct = default)
+    {
+        var c = await _db.Clientes.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, ct);
+        return c is null ? null : new ClienteDto(c.Id, c.Identificacion, c.Nombre, c.Email, c.Telefono, c.Categoria.ToString(), c.Activo);
+    }
+
+    public async Task<DespachoDto?> DespachoPorGuiaAsync(string guia, CancellationToken ct = default)
+    {
+        var d = await _db.Despachos.AsNoTracking().FirstOrDefaultAsync(x => x.NumeroGuia == guia, ct);
+        return d is null ? null : new DespachoDto(d.PedidoId, d.NumeroGuia, d.Familia, d.PlazoDias, d.Etiqueta,
+            d.FechaDespacho, d.FechaEstimadaEntrega, d.FechaEntrega, d.EstadoSeguimiento);
+    }
+
     public async Task<IReadOnlyList<ProductoDto>> ProductosAsync(string? texto, CancellationToken ct = default)
     {
         var q = _db.Productos.AsNoTracking();

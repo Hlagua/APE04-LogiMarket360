@@ -29,7 +29,7 @@ public abstract class VistaBase : UserControl, IVistaColega
 
     protected UsuarioSesion? Usuario => Ejecutor.Singleton<ISesionActual>().Usuario;
 
-    protected bool Puede(Operacion operacion) => Ejecutor.Singleton<PoliticaPermisos>().Permite(Usuario?.Rol, operacion);
+    protected bool Puede(Operacion operacion) => Ejecutor.Singleton<IPoliticaPermisos>().Permite(Usuario?.Rol, operacion);
 
     /// <summary>
     /// Suscribe la vista a las métricas (Singleton) y se desuscribe al destruirse, para que una vista de
@@ -37,7 +37,7 @@ public abstract class VistaBase : UserControl, IVistaColega
     /// </summary>
     protected void AlCambiarMetricas(Action<Application.Metricas.InstantaneaMetricas> accion)
     {
-        var metricas = Ejecutor.Singleton<Application.Metricas.MetricasSesion>();
+        var metricas = Ejecutor.Singleton<Application.Metricas.IMetricasSesion>();
         void Manejador(Application.Metricas.InstantaneaMetricas m)
         {
             if (IsDisposed || !IsHandleCreated) return;

@@ -8,6 +8,7 @@ using LogiMarket.Infrastructure;
 using LogiMarket.Infrastructure.Persistencia;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.Tests.Soporte;
 
@@ -48,6 +49,7 @@ public sealed class EntornoPrueba : IAsyncDisposable
 
     public static async Task<EntornoPrueba> CrearAsync(Action<IServiceCollection>? personalizar = null)
     {
+        Application.Metricas.MetricasSesion.Instancia.Reiniciar(); // Singleton: contadores limpios por prueba
         var e = new EntornoPrueba(personalizar);
         using var scope = e.Proveedor.CreateScope();
         await scope.ServiceProvider.GetRequiredService<IInicializadorBaseDatos>().InicializarAsync();
@@ -75,7 +77,7 @@ public sealed class EntornoPrueba : IAsyncDisposable
     public async Task IniciarSesion(string usuario)
     {
         var clave = InicializadorBaseDatos.UsuariosDemo.Single(u => u.Usuario == usuario).Clave;
-        var r = await Usar<ServicioAutenticacion, ResultadoOperacion<UsuarioSesion>>(s => s.IniciarSesionAsync(usuario, clave));
+        var r = await Usar<IServicioAutenticacion, ResultadoOperacion<UsuarioSesion>>(s => s.IniciarSesionAsync(usuario, clave));
         Assert.True(r.Exito, r.Mensaje);
     }
 
@@ -88,20 +90,25 @@ public sealed class EntornoPrueba : IAsyncDisposable
     {
         using var scope = Proveedor.CreateScope();
         var sp = scope.ServiceProvider;
-        var pedidos = sp.GetRequiredService<ServicioPedidos>();
-        var catalogo = sp.GetRequiredService<Application.Catalogo.ServicioCatalogo>();
-        var clientes = sp.GetRequiredService<Application.Clientes.ServicioClientes>();
+        var pedidos = sp.GetRequiredService<IServicioPedidos>();
+        var consultas = sp.GetRequiredService<IServicioConsultas>();
         var editor = pedidos.NuevoEditor();
-        editor.SeleccionarCliente(await clientes.ObtenerAsync(await ClienteId(cliente)));
+        editor.SeleccionarCliente(await consultas.ClienteAsync(await ClienteId(cliente)));
         editor.CambiarEntrega(entrega);
-        foreach (var (codigo, cantidad) in lineas) editor.Agregar(await catalogo.ObtenerElementoAsync(codigo), cantidad);
+        foreach (var (codigo, cantidad) in lineas) editor.Agregar(await consultas.ElementoAsync(codigo), cantidad);
         var r = await pedidos.GuardarBorradorAsync(editor);
         Assert.True(r.Exito, r.Mensaje);
         return r.Valor;
     }
 
-    public Task<ResultadoConfirmacion> Confirmar(int pedidoId, string? clave = null) =>
-        Usar<ConfirmacionPedidoFacade, ResultadoConfirmacion>(f => f.ConfirmarAsync(pedidoId, clave ?? ConfirmarPedidoCommand.ClavePorDefecto(pedidoId)));
+    public async Task<string> ClaveDefecto(int pedidoId) =>
+        ConfirmarPedidoCommand.ClavePorDefecto(pedidoId, await Db(db => db.Pedidos.Where(p => p.Id == pedidoId).Select(p => p.FechaCreacion).SingleAsync()));
+
+    public async Task<ResultadoConfirmacion> Confirmar(int pedidoId, string? clave = null)
+    {
+        var k = clave ?? await ClaveDefecto(pedidoId);
+        return await Usar<IConfirmacionPedido, ResultadoConfirmacion>(f => f.ConfirmarAsync(pedidoId, k));
+    }
 
     public async ValueTask DisposeAsync()
     {

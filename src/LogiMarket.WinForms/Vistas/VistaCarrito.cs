@@ -6,6 +6,7 @@ using LogiMarket.Application.Seguridad;
 using LogiMarket.Domain.Pedidos;
 using LogiMarket.WinForms.Infraestructura;
 using Microsoft.Extensions.DependencyInjection;
+using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.WinForms.Vistas;
 
@@ -34,7 +35,9 @@ public sealed class VistaCarrito : VistaBase
         var agregar = Ui.Barra(Ui.Etiqueta("Producto / kit"), Ed(_elemento), Ui.Etiqueta("Cantidad"), Ed(_cantidad),
             Ed(Ui.Boton("Agregar", async (_, _) => await AgregarAsync(), true)),
             Ed(Ui.Boton("Cambiar cantidad", (_, _) => CambiarCantidad())),
-            Ed(Ui.Boton("Quitar línea", (_, _) => Quitar())), Ed(_deshacer), Ed(_rehacer));
+            Ed(Ui.Boton("Quitar línea", (_, _) => Quitar())),
+            Ed(Ui.Boton("Vaciar carrito", (_, _) => { if (Ui.Confirmar("¿Vaciar el carrito? (puede deshacerlo)")) Aplicar(e => e.Vaciar()); })),
+            Ed(_deshacer), Ed(_rehacer));
         var acciones = Ui.Barra(
             Ed(Ui.Boton("Nuevo carrito", (_, _) => Nuevo())),
             Ed(Ui.Boton("Guardar borrador", async (_, _) => await GuardarAsync())),
@@ -65,7 +68,7 @@ public sealed class VistaCarrito : VistaBase
         _cargando = true;
         var seleccionCliente = _cliente.SelectedValue;
         var seleccionElemento = _elemento.SelectedValue;
-        var (ok, clientes) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<ServicioClientes>().BuscarAsync(null));
+        var (ok, clientes) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<IServicioConsultas>().ClientesAsync(null));
         if (ok && clientes is not null)
         {
             _cliente.DisplayMember = nameof(ClienteDto.Nombre);
@@ -73,7 +76,7 @@ public sealed class VistaCarrito : VistaBase
             _cliente.DataSource = clientes.Where(c => c.Activo).Select(c => c with { Nombre = $"{c.Nombre} ({c.Categoria})" }).ToList();
             if (seleccionCliente is not null) _cliente.SelectedValue = seleccionCliente;
         }
-        var (okE, elementos) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<ServicioCatalogo>().ListarVendiblesAsync());
+        var (okE, elementos) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<IServicioConsultas>().VendiblesAsync());
         if (okE && elementos is not null)
         {
             _elemento.DisplayMember = "Texto";
@@ -90,7 +93,7 @@ public sealed class VistaCarrito : VistaBase
     public override async Task RecibirPedidoAsync(int pedidoId)
     {
         if (!ConfirmarDescarte()) return;
-        var (ok, editor) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<ServicioPedidos>().AbrirEditorAsync(pedidoId));
+        var (ok, editor) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<IServicioPedidos>().AbrirEditorAsync(pedidoId));
         if (!ok || editor is null) return;
         _editor = editor;
         _cargando = true;
@@ -116,7 +119,7 @@ public sealed class VistaCarrito : VistaBase
         {
             // El editor solo conserva colaboradores singleton (valoración), por eso el ámbito puede cerrarse.
             using var scope = Ejecutor.Singleton<IServiceProvider>().CreateScope();
-            _editor = scope.ServiceProvider.GetRequiredService<ServicioPedidos>().NuevoEditor();
+            _editor = scope.ServiceProvider.GetRequiredService<IServicioPedidos>().NuevoEditor();
             _editor.CambiarEntrega((TipoEntrega)_entrega.SelectedItem!);
         }
         return _editor;
@@ -125,7 +128,7 @@ public sealed class VistaCarrito : VistaBase
     private async Task CambiarClienteAsync()
     {
         if (_cargando || _cliente.SelectedValue is not int id) return;
-        var (ok, cliente) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<ServicioClientes>().ObtenerAsync(id));
+        var (ok, cliente) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<IServicioConsultas>().ClienteAsync(id));
         if (ok && cliente is not null && Editor().Pedido?.ClienteId != id) Aplicar(e => e.SeleccionarCliente(cliente));
     }
 
@@ -135,7 +138,7 @@ public sealed class VistaCarrito : VistaBase
             !Validar(_elemento, _elemento.SelectedValue is string, "Seleccione un producto o kit")) return;
         if (Editor().Pedido is null) await CambiarClienteAsync();
         var codigo = (string)_elemento.SelectedValue!;
-        var (ok, elemento) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<ServicioCatalogo>().ObtenerElementoAsync(codigo));
+        var (ok, elemento) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<IServicioConsultas>().ElementoAsync(codigo));
         if (ok && elemento is not null) Aplicar(e => e.Agregar(elemento, (int)_cantidad.Value));
     }
 
@@ -193,7 +196,7 @@ public sealed class VistaCarrito : VistaBase
             MessageBox.Show("El carrito está vacío.", "Guardar borrador", MessageBoxButtons.OK, MessageBoxIcon.Information);
             return 0;
         }
-        var (_, r) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<ServicioPedidos>().GuardarBorradorAsync(_editor));
+        var (_, r) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<IServicioPedidos>().GuardarBorradorAsync(_editor));
         if (!Ejecutor.Mostrar(r)) return 0;
         Mostrar();
         await NotificarAsync(EventoVista.BorradorGuardado, r!.Valor);
@@ -204,7 +207,7 @@ public sealed class VistaCarrito : VistaBase
     {
         var id = await GuardarAsync();
         if (id == 0) return;
-        var (ok, v) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<ServicioPedidos>().ValidarAsync(id));
+        var (ok, v) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<IServicioPedidos>().ValidarAsync(id));
         if (!ok || v is null) return;
         if (!v.EsValido)
         {

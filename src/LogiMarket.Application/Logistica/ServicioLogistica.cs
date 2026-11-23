@@ -1,4 +1,5 @@
 using LogiMarket.Application.Comun;
+using LogiMarket.Application.Contratos;
 using LogiMarket.Application.Entrega;
 using LogiMarket.Application.Eventos;
 using LogiMarket.Application.Metricas;
@@ -9,8 +10,8 @@ using LogiMarket.Domain.Logistica;
 
 namespace LogiMarket.Application.Logistica;
 
-/// <summary>Despacho (guía con la familia del Abstract Factory), entrega y seguimiento.</summary>
-public sealed class ServicioLogistica
+/// <summary>Comandos de logística: despacho (guía con la familia del Abstract Factory) y entrega. El seguimiento es una consulta (ServicioConsultas).</summary>
+public sealed class ServicioLogistica : IServicioLogistica
 {
     private readonly IPedidoRepositorio _pedidos;
     private readonly IDespachoRepositorio _despachos;
@@ -19,14 +20,14 @@ public sealed class ServicioLogistica
     private readonly IUnidadDeTrabajo _uow;
     private readonly IServicioAutorizacion _autorizacion;
     private readonly ISesionActual _sesion;
-    private readonly ProveedorFabricasEntrega _fabricas;
-    private readonly ProcesadorOutbox _procesadorOutbox;
-    private readonly MetricasSesion _metricas;
+    private readonly IProveedorFabricasEntrega _fabricas;
+    private readonly IProcesadorOutbox _procesadorOutbox;
+    private readonly IMetricasSesion _metricas;
     private readonly IReloj _reloj;
 
     public ServicioLogistica(IPedidoRepositorio pedidos, IDespachoRepositorio despachos, IOutboxRepositorio outbox,
         IAuditoriaRepositorio auditoria, IUnidadDeTrabajo uow, IServicioAutorizacion autorizacion, ISesionActual sesion,
-        ProveedorFabricasEntrega fabricas, ProcesadorOutbox procesadorOutbox, MetricasSesion metricas, IReloj reloj)
+        IProveedorFabricasEntrega fabricas, IProcesadorOutbox procesadorOutbox, IMetricasSesion metricas, IReloj reloj)
     {
         _pedidos = pedidos;
         _despachos = despachos;
@@ -90,17 +91,5 @@ public sealed class ServicioLogistica
         }, ct);
         _metricas.RegistrarEntrega();
         return ResultadoOperacion.Ok($"Pedido {pedidoId} entregado.");
-    }
-
-    public async Task<string> SeguimientoAsync(string guiaOPedido, CancellationToken ct = default)
-    {
-        _autorizacion.Exigir(Operacion.ConsultarInformacion);
-        var texto = guiaOPedido.Trim();
-        var despacho = int.TryParse(texto.Replace("PED-", "", StringComparison.OrdinalIgnoreCase), out var id)
-            ? await _despachos.ObtenerPorPedidoAsync(id, ct)
-            : await _despachos.ObtenerPorGuiaAsync(texto.ToUpperInvariant(), ct);
-        return despacho is null
-            ? $"No se encontró seguimiento para '{texto}'."
-            : $"Guía {despacho.NumeroGuia} (PED-{despacho.PedidoId:000000}): {despacho.EstadoSeguimiento}";
     }
 }

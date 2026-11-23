@@ -1,6 +1,7 @@
 using LogiMarket.Application.Comun;
 using LogiMarket.Application.Puertos;
 using LogiMarket.Domain.Eventos;
+using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.Application.Notificaciones;
 
@@ -30,7 +31,7 @@ public abstract class CreadorNotificador
 /// Elige el creador según la configuración (fuera de los formularios). La UI nunca instancia
 /// notificadores concretos.
 /// </summary>
-public sealed class SelectorCanalNotificacion
+public sealed class SelectorCanalNotificacion : ISelectorCanalNotificacion
 {
     private readonly IReadOnlyDictionary<string, CreadorNotificador> _creadores;
     private readonly ConfiguracionDemo _configuracion;

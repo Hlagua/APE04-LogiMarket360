@@ -1,5 +1,6 @@
 using LogiMarket.Application.Comun;
 using LogiMarket.Application.Consultas;
+using LogiMarket.Application.Contratos;
 using LogiMarket.Application.Puertos;
 using LogiMarket.Application.Seguridad;
 using LogiMarket.Domain.Catalogo;
@@ -24,101 +25,30 @@ public sealed record ElementoVendibleDto(string Codigo, string Nombre, bool EsKi
 public sealed record DesgloseDto(string Codigo, decimal Precio, decimal PesoKg, IReadOnlyList<ComponenteFisico> ComponentesIterador,
     IReadOnlyList<LineaDesglose> LineasVisitor, IReadOnlyList<string> KitsVisitados, string ResumenPeso);
 
-/// <summary>Casos de uso del catálogo (productos, kits Composite, desglose Iterator/Visitor).</summary>
-public sealed class ServicioCatalogo
+/// <summary>Comandos del catálogo: productos, stock y kits (Composite con detección de ciclos). Las consultas están en ServicioConsultas.</summary>
+public sealed class ServicioCatalogo : IServicioCatalogo
 {
     private readonly IProductoRepositorio _productos;
     private readonly IKitRepositorio _kits;
     private readonly IMovimientoInventarioRepositorio _movimientos;
     private readonly IAuditoriaRepositorio _auditoria;
-    private readonly IConsultasLectura _consultas;
     private readonly IUnidadDeTrabajo _uow;
     private readonly IServicioAutorizacion _autorizacion;
     private readonly ISesionActual _sesion;
     private readonly IReloj _reloj;
 
     public ServicioCatalogo(IProductoRepositorio productos, IKitRepositorio kits, IMovimientoInventarioRepositorio movimientos,
-        IAuditoriaRepositorio auditoria, IConsultasLectura consultas, IUnidadDeTrabajo uow,
+        IAuditoriaRepositorio auditoria, IUnidadDeTrabajo uow,
         IServicioAutorizacion autorizacion, ISesionActual sesion, IReloj reloj)
     {
         _productos = productos;
         _kits = kits;
         _movimientos = movimientos;
         _auditoria = auditoria;
-        _consultas = consultas;
         _uow = uow;
         _autorizacion = autorizacion;
         _sesion = sesion;
         _reloj = reloj;
-    }
-
-    // ---------------- Consultas ----------------
-
-    public Task<IReadOnlyList<ProductoDto>> ListarProductosAsync(string? texto = null, CancellationToken ct = default)
-    {
-        _autorizacion.Exigir(Operacion.ConsultarInformacion);
-        return _consultas.ProductosAsync(texto, ct);
-    }
-
-    public async Task<ArbolCatalogo> ObtenerArbolAsync(CancellationToken ct = default) =>
-        new(await _productos.ListarAsync(ct), await _kits.ListarAsync(ct));
-
-    public async Task<IElementoCatalogo> ObtenerElementoAsync(string codigo, CancellationToken ct = default)
-    {
-        _autorizacion.Exigir(Operacion.ConsultarInformacion);
-        return (await ObtenerArbolAsync(ct)).Obtener(codigo);
-    }
-
-    public async Task<IReadOnlyList<KitDto>> ListarKitsAsync(CancellationToken ct = default)
-    {
-        _autorizacion.Exigir(Operacion.ConsultarInformacion);
-        var productos = await _productos.ListarAsync(ct);
-        var stock = productos.ToDictionary(p => p.Sku, p => p.Stock, StringComparer.OrdinalIgnoreCase);
-        var kits = await _kits.ListarAsync(ct);
-        var arbol = new ArbolCatalogo(productos, kits);
-        var nombres = productos.Select(p => (p.Sku, p.Nombre)).Concat(kits.Select(k => (Sku: k.Codigo, k.Nombre)))
-            .ToDictionary(x => x.Sku, x => x.Nombre, StringComparer.OrdinalIgnoreCase);
-
-        return kits.Select(k =>
-        {
-            var elemento = arbol.Obtener(k.Codigo);
-            var componentes = k.Componentes.Select(c =>
-                new ComponenteKitDto(c.CodigoComponente, nombres.GetValueOrDefault(c.CodigoComponente, "?"), c.EsKit, c.Cantidad)).ToList();
-            return new KitDto(k.Id, k.Codigo, k.Nombre, elemento.Precio, elemento.PesoKg, StockDisponible(elemento, stock),
-                componentes, string.Join(" + ", componentes.Select(c => $"{c.Codigo}x{c.Cantidad}")));
-        }).ToList();
-    }
-
-    public async Task<IReadOnlyList<ElementoVendibleDto>> ListarVendiblesAsync(CancellationToken ct = default)
-    {
-        _autorizacion.Exigir(Operacion.ConsultarInformacion);
-        var productos = (await _productos.ListarAsync(ct)).ToList();
-        var stock = productos.ToDictionary(p => p.Sku, p => p.Activo ? p.Stock : 0, StringComparer.OrdinalIgnoreCase);
-        var arbol = new ArbolCatalogo(productos, await _kits.ListarAsync(ct));
-        var lista = productos.Where(p => p.Activo)
-            .Select(p => new ElementoVendibleDto(p.Sku, p.Nombre, false, p.Precio, p.Stock)).ToList();
-        foreach (var codigo in arbol.CodigosKits.OrderBy(c => c))
-        {
-            var e = arbol.Obtener(codigo);
-            lista.Add(new ElementoVendibleDto(e.Codigo, e.Nombre, true, e.Precio, StockDisponible(e, stock)));
-        }
-        return lista;
-    }
-
-    /// <summary>Unidades vendibles de un elemento según el stock de sus SKU finales (usa el Iterator).</summary>
-    private static int StockDisponible(IElementoCatalogo elemento, IReadOnlyDictionary<string, int> stock) =>
-        elemento.ExpandirSkus().Select(kv => stock.GetValueOrDefault(kv.Key) / kv.Value).DefaultIfEmpty(0).Min();
-
-    /// <summary>Recorre un elemento con el Iterator y con los dos Visitors.</summary>
-    public async Task<DesgloseDto> DesglosarAsync(string codigo, CancellationToken ct = default)
-    {
-        var elemento = await ObtenerElementoAsync(codigo, ct);
-        var desglose = new DesgloseSkuVisitor();
-        var peso = new PesoLogisticoVisitor();
-        elemento.Aceptar(desglose);
-        elemento.Aceptar(peso);
-        return new DesgloseDto(elemento.Codigo, elemento.Precio, peso.PesoTotalKg, elemento.ComponentesFisicos(),
-            desglose.Lineas, desglose.KitsVisitados, peso.Resumen);
     }
 
     // ---------------- Productos ----------------

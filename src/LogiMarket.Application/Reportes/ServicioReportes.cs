@@ -3,6 +3,7 @@ using LogiMarket.Application.Comun;
 using LogiMarket.Application.Consultas;
 using LogiMarket.Application.Puertos;
 using LogiMarket.Application.Seguridad;
+using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.Application.Reportes;
 
@@ -11,15 +12,15 @@ public sealed record ResultadoFiltro(string Arbol, IReadOnlyList<PedidoResumenDt
 public enum TipoComprobante { Venta, Devolucion }
 
 /// <summary>Reportes: filtro con Interpreter, comprobantes con Bridge y vista masiva con Flyweight.</summary>
-public sealed class ServicioReportes
+public sealed class ServicioReportes : IServicioReportes
 {
     private readonly IConsultasLectura _consultas;
     private readonly IServicioAutorizacion _autorizacion;
     private readonly IReadOnlyDictionary<string, ISalidaDocumento> _salidas;
-    private readonly GeneradorVistaMasiva _vistaMasiva;
+    private readonly IGeneradorVistaMasiva _vistaMasiva;
 
     public ServicioReportes(IConsultasLectura consultas, IServicioAutorizacion autorizacion,
-        IEnumerable<ISalidaDocumento> salidas, GeneradorVistaMasiva vistaMasiva)
+        IEnumerable<ISalidaDocumento> salidas, IGeneradorVistaMasiva vistaMasiva)
     {
         _consultas = consultas;
         _autorizacion = autorizacion;

@@ -37,6 +37,11 @@ bodega/Bodega123!, consulta/Consulta123!.
 - Dominio: `src/LogiMarket.Domain` (Pedido + State/Memento/Builder/Prototype, Catálogo Composite/Iterator/Visitor, Strategy).
 - Casos de uso: `src/LogiMarket.Application` (Facade de confirmación, Chain, Command, Template Method, Interpreter,
   Bridge, Flyweight, Observer/Outbox, Proxy, Decorator, Abstract Factory, Factory Method, Singleton de métricas).
+- Contratos (DIP): `src/LogiMarket.Application/Contratos/Contratos.cs`. Inyectar SIEMPRE interfaces, nunca clases concretas.
+- CQRS: lecturas solo en `ServicioConsultas` (`IServicioConsultas` + `IConsultasLectura`); los servicios de comando no exponen consultas.
+- Valores del caso (tasas, tarifas, plazos, días, umbrales): `src/LogiMarket.Domain/Comun/ParametrosNegocio.cs`. Sin números mágicos.
 - Composición DI: `src/LogiMarket.Infrastructure/RegistroDependencias.cs` (la usan la app y las pruebas).
 - UI: `src/LogiMarket.WinForms/Vistas/*` (una vista por pestaña), `Infraestructura/Mediador.cs`, `Ejecutor.cs`.
 - Pruebas: `tests/LogiMarket.Tests` (DisplayName con el caso P01–P38). Soporte: `Soporte/EntornoPrueba.cs`.
+  Evidencia esperado/obtenido: `Soporte/Evidencia.Registrar(...)`. Corren en serie (Singleton real).
+- Commits: solo a nombre del usuario, sin línea Co-Authored-By.

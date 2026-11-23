@@ -1,7 +1,9 @@
+using LogiMarket.Domain.Comun;
 using LogiMarket.Application.Seguridad;
 using LogiMarket.Domain.Clientes;
 using LogiMarket.Domain.Pedidos;
 using LogiMarket.Domain.Pedidos.Estados;
+using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.Application.Pedidos;
 
@@ -69,7 +71,7 @@ public sealed class ClienteActivoValidador : EslabonValidacion
 
 public sealed class LineasCantidadesValidador : EslabonValidacion
 {
-    public const int MaximoPorLinea = 1000;
+    public const int MaximoPorLinea = ParametrosNegocio.CantidadMaximaPorLinea;
     public override string Nombre => "LineasCantidades";
 
     protected override RechazoValidacion? Evaluar(ContextoValidacion c)
@@ -101,9 +103,9 @@ public sealed class StockDisponibleValidador : EslabonValidacion
 
 public sealed class CondicionesConfirmacionValidador : EslabonValidacion
 {
-    private readonly PoliticaPermisos _permisos;
+    private readonly IPoliticaPermisos _permisos;
 
-    public CondicionesConfirmacionValidador(PoliticaPermisos permisos) => _permisos = permisos;
+    public CondicionesConfirmacionValidador(IPoliticaPermisos permisos) => _permisos = permisos;
 
     public override string Nombre => "AutorizacionCondiciones";
 
@@ -120,11 +122,11 @@ public sealed class CondicionesConfirmacionValidador : EslabonValidacion
 }
 
 /// <summary>Arma la cadena en el orden exigido: cliente → líneas → stock → autorización/condiciones.</summary>
-public sealed class CadenaValidacionPedido
+public sealed class CadenaValidacionPedido : ICadenaValidacionPedido
 {
     private readonly EslabonValidacion _cabeza;
 
-    public CadenaValidacionPedido(PoliticaPermisos permisos)
+    public CadenaValidacionPedido(IPoliticaPermisos permisos)
     {
         _cabeza = new ClienteActivoValidador();
         _cabeza.Enlazar(new LineasCantidadesValidador())
