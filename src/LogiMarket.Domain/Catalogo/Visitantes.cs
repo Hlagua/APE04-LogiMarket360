@@ -2,7 +2,9 @@ using LogiMarket.Domain.Comun;
 
 namespace LogiMarket.Domain.Catalogo;
 
-/// <summary>Patrón Visitor: operaciones sobre la estructura Composite sin modificar sus clases.</summary>
+//patron visitor (comportamental)
+//interfaz IVisitanteCatalogo
+//objetivo: operaciones sobre la estructura Composite sin modificar sus clases
 public interface IVisitanteCatalogo
 {
     void VisitarProducto(ProductoSimple producto, int multiplicador);
@@ -12,7 +14,7 @@ public interface IVisitanteCatalogo
 
 public sealed record LineaDesglose(string Sku, string Nombre, int Cantidad, int Nivel);
 
-/// <summary>Visitante 1: desglose físico por SKU, conservando el nivel de anidamiento visitado.</summary>
+//visitante 1: desglose fisico por SKU, conservando el nivel de anidamiento visitado
 public sealed class DesgloseSkuVisitor : IVisitanteCatalogo
 {
     private readonly List<LineaDesglose> _lineas = new();
@@ -37,7 +39,7 @@ public sealed class DesgloseSkuVisitor : IVisitanteCatalogo
     public void SalirKit(KitCompuesto kit) => _nivel--;
 }
 
-/// <summary>Visitante 2: estimación del peso logístico total (kg) y kits anidados atravesados.</summary>
+//visitante 2: estimacion del peso logistico total (kg) y kits anidados atravesados
 public sealed class PesoLogisticoVisitor : IVisitanteCatalogo
 {
     private decimal _peso;

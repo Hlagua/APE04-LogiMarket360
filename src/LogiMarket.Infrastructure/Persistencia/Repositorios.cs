@@ -11,7 +11,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LogiMarket.Infrastructure.Persistencia;
 
-// Adaptadores EF Core del patrón Repository. No llaman a SaveChanges: eso es de la Unidad de Trabajo.
+//adaptadores EF Core del patron Repository
+//no llaman a SaveChanges: eso es de la Unidad de Trabajo
 
 public sealed class ProductoRepositorioEf(LogiMarketDbContext db) : IProductoRepositorio
 {

@@ -4,7 +4,7 @@ using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.Application.Catalogo;
 
-/// <summary>Estado INTRÍNSECO compartido (inmutable) del patrón Flyweight.</summary>
+//estado INTRINSECO compartido (inmutable) del patron Flyweight
 public sealed class MetadatosSku
 {
     public string Sku { get; }
@@ -24,7 +24,7 @@ public sealed class MetadatosSku
     }
 }
 
-/// <summary>Fila de vista: metadatos compartidos + estado EXTRÍNSECO por fila (stock, cantidad, precio).</summary>
+//fila de vista: metadatos compartidos + estado EXTRINSECO por fila (stock, cantidad, precio)
 public sealed record FilaCatalogoVisual(MetadatosSku Metadatos, int Stock, int Cantidad, decimal PrecioVenta)
 {
     public string Sku => Metadatos.Sku;
@@ -32,10 +32,13 @@ public sealed record FilaCatalogoVisual(MetadatosSku Metadatos, int Stock, int C
     public string Categoria => Metadatos.Categoria;
 }
 
-/// <summary>Fila equivalente SIN Flyweight (cada fila duplica sus metadatos), usada solo para comparar.</summary>
+//fila equivalente SIN Flyweight (cada fila duplica sus metadatos), usada solo para comparar
 public sealed record FilaSinFlyweight(string Sku, string Nombre, string Categoria, string Descripcion, int Stock, int Cantidad, decimal PrecioVenta);
 
-/// <summary>Fábrica Flyweight: entrega la misma instancia de metadatos para un mismo SKU.</summary>
+//patron flyweight (estructural)
+//clase CatalogoVisualFlyweightFactory
+//objetivo: entregar la misma instancia de metadatos para un mismo SKU
+//el nombre, la categoria y la descripcion se comparten, el stock y la cantidad van en cada fila
 public sealed class CatalogoVisualFlyweightFactory : IFabricaMetadatosSku
 {
     private readonly ConcurrentDictionary<string, MetadatosSku> _cache = new(StringComparer.OrdinalIgnoreCase);
@@ -44,10 +47,9 @@ public sealed class CatalogoVisualFlyweightFactory : IFabricaMetadatosSku
     public int InstanciasCreadas => _cache.Count;
     public int Solicitudes => _solicitudes;
 
-    /// <summary>
-    /// Devuelve la instancia compartida del SKU. Si el catálogo cambió (nombre, categoría o descripción
-    /// distintos), se crea UNA nueva instancia inmutable para ese SKU y las filas siguientes la comparten.
-    /// </summary>
+    //devuelve la instancia compartida del SKU
+    //si el catalogo cambio (nombre, categoria o descripcion distintos)
+    //se crea UNA nueva instancia inmutable para ese SKU y las filas siguientes la comparten
     public MetadatosSku Obtener(string sku, string nombre, string categoria, string descripcion)
     {
         Interlocked.Increment(ref _solicitudes);
@@ -63,11 +65,11 @@ public sealed class CatalogoVisualFlyweightFactory : IFabricaMetadatosSku
     }
 }
 
-/// <summary>
-/// Resultado de la comparación. Lo estable y verificable: ReferenciasCompartidas, InstanciasMetadatos y el
-/// recuento de cadenas retenidas (identidad de objetos). Los bytes de GC.GetTotalMemory son la comparación de
-/// memoria que se reporta, sujeta a variaciones del recolector.
-/// </summary>
+//resultado de la comparacion
+//lo estable y verificable:
+//ReferenciasCompartidas, InstanciasMetadatos y el recuento de cadenas retenidas (identidad de objetos)
+//los bytes de GC.GetTotalMemory son la comparacion de memoria que se reporta
+//sujeta a variaciones del recolector
 public sealed record MedicionFlyweight(int Filas, int SkusDistintos, int InstanciasMetadatos, bool ReferenciasCompartidas,
     int CadenasRetenidasConFlyweight, int CadenasRetenidasSinFlyweight,
     long BytesConFlyweight, long BytesSinFlyweight, string Condiciones)
@@ -75,11 +77,10 @@ public sealed record MedicionFlyweight(int Filas, int SkusDistintos, int Instanc
     public double AhorroPorcentual => BytesSinFlyweight == 0 ? 0 : 100.0 * (BytesSinFlyweight - BytesConFlyweight) / BytesSinFlyweight;
 }
 
-/// <summary>
-/// Genera la vista masiva (≥1.000 filas) y mide bajo condiciones EQUIVALENTES: mismos datos de origen,
-/// mismo número de filas, mismas copias de cadenas simulando la lectura desde la base. Se compara la memoria
-/// RETENIDA con GC.GetTotalMemory(true) (recolección completa antes y después de cada escenario).
-/// </summary>
+//genera la vista masiva (>=1.000 filas) y mide bajo condiciones EQUIVALENTES:
+//mismos datos de origen, mismo numero de filas, mismas copias de cadenas simulando la lectura desde la base
+//se compara la memoria RETENIDA con GC.GetTotalMemory(true) (recoleccion completa antes
+//despues de cada escenario)
 public sealed class GeneradorVistaMasiva : IGeneradorVistaMasiva
 {
     private readonly IFabricaMetadatosSku _fabrica;
@@ -113,11 +114,11 @@ public sealed class GeneradorVistaMasiva : IGeneradorVistaMasiva
     {
         if (productos.Count == 0) throw new InvalidOperationException("No hay productos para generar la vista.");
         _fabrica.Limpiar();
-        GenerarSinFlyweight(productos, 10); // calentamiento JIT de ambas rutas
+        GenerarSinFlyweight(productos, 10); //calentamiento JIT de ambas rutas
         GenerarConFlyweight(productos, 10);
         _fabrica.Limpiar();
 
-        // Se mide la memoria RETENIDA (lo que el patrón ahorra): GC completo antes y después.
+        //se mide la memoria RETENIDA (lo que el patron ahorra): GC completo antes y despues
         var antesSin = GC.GetTotalMemory(true);
         IReadOnlyList<FilaSinFlyweight>? sin = GenerarSinFlyweight(productos, filas);
         var bytesSin = GC.GetTotalMemory(true) - antesSin;
@@ -129,7 +130,7 @@ public sealed class GeneradorVistaMasiva : IGeneradorVistaMasiva
         var con = GenerarConFlyweight(productos, filas);
         var bytesCon = GC.GetTotalMemory(true) - antesCon;
 
-        // Identidad: todas las filas del mismo SKU comparten la MISMA instancia de metadatos.
+        //identidad: todas las filas del mismo SKU comparten la MISMA instancia de metadatos
         var compartidas = con.GroupBy(f => f.Sku).All(g => g.All(f => ReferenceEquals(f.Metadatos, g.First().Metadatos)));
         var cadenasCon = ContarDistintas(con.Select(f => f.Metadatos).Distinct(ReferenceEqualityComparer.Instance)
             .Cast<MetadatosSku>().SelectMany(m => new[] { m.Sku, m.Nombre, m.Categoria, m.Descripcion }));
@@ -140,10 +141,10 @@ public sealed class GeneradorVistaMasiva : IGeneradorVistaMasiva
             "memoria retenida medida con GC.GetTotalMemory(true) tras calentamiento JIT; valores aproximados.");
     }
 
-    /// <summary>Cuenta objetos distintos por IDENTIDAD (no por contenido): medida determinista del reparto.</summary>
+    //cuenta objetos distintos por IDENTIDAD (no por contenido): medida determinista del reparto
     private static int ContarDistintas(IEnumerable<string> cadenas) =>
         new HashSet<string>(cadenas, ReferenceEqualityComparer.Instance as IEqualityComparer<string> ?? throw new InvalidOperationException()).Count;
 
-    // Simula que cada fila llega con sus propias cadenas (como al materializar filas desde la base).
+    //simula que cada fila llega con sus propias cadenas (como al materializar filas desde la base)
     private static string Copia(string s) => new(s.AsSpan());
 }

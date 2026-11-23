@@ -2,7 +2,8 @@ using LogiMarket.Domain.Comun;
 
 namespace LogiMarket.Domain.Pedidos;
 
-/// <summary>Cobro simulado APROBADO. Referencia y clave de idempotencia son únicas (índices en BD).</summary>
+//cobro simulado APROBADO
+//referencia y clave de idempotencia son unicas (indices en BD)
 public class Pago
 {
     public int Id { get; private set; }

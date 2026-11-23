@@ -5,7 +5,7 @@ using LogiMarket.Infrastructure.Persistencia;
 
 namespace LogiMarket.Tests.Soporte;
 
-/// <summary>Catálogo oficial en memoria (sin base) para pruebas unitarias del dominio.</summary>
+//catalogo oficial en memoria (sin base) para pruebas unitarias del dominio
 public static class CatalogoPrueba
 {
     public static ArbolCatalogo Arbol()

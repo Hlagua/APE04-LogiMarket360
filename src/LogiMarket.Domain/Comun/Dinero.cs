@@ -1,6 +1,6 @@
 namespace LogiMarket.Domain.Comun;
 
-/// <summary>Regla única de redondeo monetario (DRY): 2 decimales, MidpointRounding.AwayFromZero.</summary>
+//regla unica de redondeo monetario (DRY): 2 decimales, MidpointRounding.AwayFromZero
 public static class Dinero
 {
     public static decimal Redondear(decimal valor) => Math.Round(valor, 2, MidpointRounding.AwayFromZero);

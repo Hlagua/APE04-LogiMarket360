@@ -11,7 +11,8 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace LogiMarket.Infrastructure.Persistencia;
 
-/// <summary>DbContext de EF Core sobre SQLite. Es la base de la Unidad de Trabajo.</summary>
+//DbContext de EF Core sobre SQLite
+//es la base de la Unidad de Trabajo
 public sealed class LogiMarketDbContext : DbContext
 {
     public LogiMarketDbContext(DbContextOptions<LogiMarketDbContext> options) : base(options) { }
@@ -75,7 +76,7 @@ public sealed class LogiMarketDbContext : DbContext
             e.Property(x => x.Descripcion).HasMaxLength(500);
             Moneda(e.Property(x => x.Precio));
             e.Property(x => x.PesoKg).HasPrecision(10, 3);
-            e.Property(x => x.Version).IsConcurrencyToken(); // concurrencia optimista contra sobreventa
+            e.Property(x => x.Version).IsConcurrencyToken(); //concurrencia optimista contra sobreventa
         });
 
         mb.Entity<Kit>(e =>
@@ -173,11 +174,11 @@ public sealed class LogiMarketDbContext : DbContext
             e.ToTable("Pago");
             e.HasKey(x => x.Id);
             e.HasOne<Pedido>().WithMany().HasForeignKey(x => x.PedidoId).OnDelete(DeleteBehavior.Restrict);
-            e.HasIndex(x => x.PedidoId).IsUnique();          // un solo cobro por pedido
+            e.HasIndex(x => x.PedidoId).IsUnique(); //un solo cobro por pedido
             e.Property(x => x.Referencia).HasMaxLength(100).IsRequired();
             e.HasIndex(x => x.Referencia).IsUnique();
             e.Property(x => x.ClaveIdempotencia).HasMaxLength(100).IsRequired();
-            e.HasIndex(x => x.ClaveIdempotencia).IsUnique(); // idempotencia
+            e.HasIndex(x => x.ClaveIdempotencia).IsUnique(); //idempotencia
             Moneda(e.Property(x => x.Monto));
             e.Property(x => x.Proveedor).HasMaxLength(50);
             e.Property(x => x.CorrelacionId).HasMaxLength(50);
@@ -214,11 +215,11 @@ public sealed class LogiMarketDbContext : DbContext
             e.ToTable("Devolucion");
             e.HasKey(x => x.Id);
             e.HasOne<Pedido>().WithMany().HasForeignKey(x => x.PedidoId).OnDelete(DeleteBehavior.Restrict);
-            e.HasIndex(x => x.PedidoId).IsUnique();           // devolución única por pedido
+            e.HasIndex(x => x.PedidoId).IsUnique(); //devolucion unica por pedido
             e.Property(x => x.Motivo).HasConversion<string>().HasMaxLength(20);
             Moneda(e.Property(x => x.MontoReembolso));
             e.Property(x => x.ReferenciaReembolso).HasMaxLength(100).IsRequired();
-            e.HasIndex(x => x.ReferenciaReembolso).IsUnique(); // reembolso único
+            e.HasIndex(x => x.ReferenciaReembolso).IsUnique(); //reembolso unico
             e.Property(x => x.Observacion).HasMaxLength(300);
             e.Property(x => x.Usuario).HasMaxLength(50);
         });

@@ -1,6 +1,8 @@
 namespace LogiMarket.Domain.Comun;
 
-/// <summary>Patrón Prototype: contrato de clonación profunda.</summary>
+//patron prototype (creacional)
+//interfaz IPrototipo
+//objetivo: contrato de clonacion profunda
 public interface IPrototipo<out T>
 {
     T Clonar();

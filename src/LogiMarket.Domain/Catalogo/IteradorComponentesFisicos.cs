@@ -1,9 +1,11 @@
 namespace LogiMarket.Domain.Catalogo;
 
-/// <summary>Componente físico final (SKU) con la cantidad acumulada propagada desde los kits.</summary>
+//componente fisico final (SKU) con la cantidad acumulada propagada desde los kits
 public sealed record ComponenteFisico(string Sku, string Nombre, int Cantidad, decimal PrecioUnitario, decimal PesoKg);
 
-/// <summary>Patrón Iterator: recorrido externo de los componentes físicos de un elemento.</summary>
+//patron iterator (comportamental)
+//interfaz IIteradorComponentes
+//objetivo: recorrido externo de los componentes fisicos de un elemento
 public interface IIteradorComponentes
 {
     bool MoverSiguiente();
@@ -11,11 +13,9 @@ public interface IIteradorComponentes
     void Reiniciar();
 }
 
-/// <summary>
-/// Iterador propio en profundidad con pila explícita: determinista (orden de inserción), propaga
-/// cantidades multiplicándolas por nivel y termina siempre (los ciclos se rechazan al construir el kit
-/// y además se limita la profundidad como defensa).
-/// </summary>
+//iterador propio en profundidad con pila explicita: determinista (orden de insercion), propaga
+//cantidades multiplicandolas por nivel y termina siempre (los ciclos se rechazan al construir el kit
+//y ademas se limita la profundidad como defensa)
 public sealed class IteradorComponentesFisicos : IIteradorComponentes
 {
     private const int ProfundidadMaxima = 32;
@@ -49,7 +49,7 @@ public sealed class IteradorComponentesFisicos : IIteradorComponentes
 
             if (elemento is KitCompuesto kit)
             {
-                // Se apilan en orden inverso para respetar el orden de inserción al desapilar.
+                //se apilan en orden inverso para respetar el orden de insercion al desapilar
                 var hijos = kit.Hijos;
                 for (var i = hijos.Count - 1; i >= 0; i--)
                     _pila.Push((hijos[i].Elemento, multiplicador * hijos[i].Cantidad, profundidad + 1));

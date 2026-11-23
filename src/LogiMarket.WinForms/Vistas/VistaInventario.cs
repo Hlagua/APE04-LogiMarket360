@@ -8,7 +8,8 @@ using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.WinForms.Vistas;
 
-/// <summary>10. Inventario y movimientos: existencias, alertas y kardex trazable.</summary>
+//10
+//inventario y movimientos: existencias, alertas y kardex trazable
 public sealed class VistaInventario : VistaBase
 {
     private readonly DataGridView _existencias = Ui.Grilla(), _movimientos = Ui.Grilla();

@@ -8,10 +8,9 @@ namespace LogiMarket.Application.Pedidos;
 public sealed record ResumenValoracion(decimal Subtotal, decimal Descuento, string Politica, decimal Tasa,
     decimal Tarifa, decimal Total, int PlazoDias, string Familia, int Unidades);
 
-/// <summary>
-/// Valoración única del pedido (DRY): Strategy de descuento + tarifa de la familia de entrega
-/// (Abstract Factory). Ningún formulario calcula tarifas ni descuentos.
-/// </summary>
+//valoracion unica del pedido (DRY):
+//strategy de descuento + tarifa de la familia de entrega (Abstract Factory)
+//ningun formulario calcula tarifas ni descuentos
 public sealed class ServicioValoracion : IServicioValoracion
 {
     private readonly ICalculadoraDescuento _calculadora;

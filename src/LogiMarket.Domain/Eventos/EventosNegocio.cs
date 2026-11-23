@@ -1,6 +1,6 @@
 namespace LogiMarket.Domain.Eventos;
 
-/// <summary>Evento de negocio publicado a los observadores después de confirmar la transacción.</summary>
+//evento de negocio publicado a los observadores despues de confirmar la transaccion
 public abstract record EventoNegocio(int PedidoId, string ClienteNombre, string ClienteEmail, string ClienteTelefono, DateTime Fecha)
 {
     public abstract string Tipo { get; }

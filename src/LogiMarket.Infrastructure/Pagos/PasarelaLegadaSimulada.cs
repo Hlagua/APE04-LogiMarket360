@@ -1,6 +1,6 @@
 namespace LogiMarket.Infrastructure.Pagos;
 
-/// <summary>Respuesta del sistema legado: código "00" aprobado, "51" fondos insuficientes, "96" error de sistema.</summary>
+//respuesta del sistema legado: codigo "00" aprobado, "51" fondos insuficientes, "96" error de sistema
 public sealed class RespuestaLegada
 {
     public string Codigo { get; init; } = "";
@@ -8,10 +8,10 @@ public sealed class RespuestaLegada
     public string Texto { get; init; } = "";
 }
 
-/// <summary>
-/// "Código LEGADO" (no se modifica): API síncrona e incompatible que cobra en CENTAVOS con una
-/// referencia de texto. La aplicación nunca la conoce; solo el Adapter la usa.
-/// </summary>
+//"Codigo LEGADO" (no se modifica):
+//API sincrona e incompatible que cobra en CENTAVOS con una referencia de texto
+//la aplicacion nunca la conoce
+//solo el Adapter la usa
 public class PasarelaLegadaSimulada
 {
     private readonly Func<bool> _rechazar;

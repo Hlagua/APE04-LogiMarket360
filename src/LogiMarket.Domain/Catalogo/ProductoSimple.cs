@@ -2,7 +2,7 @@ using LogiMarket.Domain.Comun;
 
 namespace LogiMarket.Domain.Catalogo;
 
-/// <summary>Composite: hoja inmutable que representa un SKU físico.</summary>
+//composite: hoja inmutable que representa un SKU fisico
 public sealed class ProductoSimple : IElementoCatalogo
 {
     public string Codigo { get; }

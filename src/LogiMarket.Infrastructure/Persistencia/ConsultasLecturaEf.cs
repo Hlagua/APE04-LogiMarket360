@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LogiMarket.Infrastructure.Persistencia;
 
-/// <summary>Lado de consulta (CQRS básico): proyecciones AsNoTracking a DTO, sin SQL concatenado.</summary>
+//lado de consulta (CQRS basico): proyecciones AsNoTracking a DTO, sin SQL concatenado
 public sealed class ConsultasLecturaEf : IConsultasLectura
 {
     private readonly LogiMarketDbContext _db;
@@ -129,7 +129,7 @@ public sealed class ConsultasLecturaEf : IConsultasLectura
     {
         var estados = await _db.Pedidos.AsNoTracking().Select(p => new { p.Estado, p.Devuelto }).ToListAsync(ct);
         int Contar(EstadoPedido e) => estados.Count(x => x.Estado == e);
-        // decimal se guarda como TEXT en SQLite: la suma se hace en memoria para no perder precisión.
+        //decimal se guarda como TEXT en SQLite: la suma se hace en memoria para no perder precision
         var cobrado = (await _db.Pagos.AsNoTracking().Select(p => p.Monto).ToListAsync(ct)).Sum();
         var reembolsado = (await _db.Devoluciones.AsNoTracking().Select(d => d.MontoReembolso).ToListAsync(ct)).Sum();
         var bajos = await _db.Productos.AsNoTracking().Where(p => p.Activo && p.Stock <= umbralStockBajo)

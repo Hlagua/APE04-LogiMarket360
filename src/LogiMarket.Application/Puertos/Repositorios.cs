@@ -9,9 +9,12 @@ using LogiMarket.Domain.Usuarios;
 
 namespace LogiMarket.Application.Puertos;
 
-// LADO DE ESCRITURA (CQRS básico): interfaces PEQUEÑAS por agregado (ISP), implementadas con EF Core en
-// Infrastructure (DIP). Solo cargan agregados para modificarlos y los agregan; las consultas para pantallas
-// y reportes van por IConsultasLectura (Consultas/ConsultasLectura.cs).
+//LADO DE ESCRITURA (CQRS basico):
+//interfaces PEQUEÑAS por agregado (ISP), implementadas con EF Core en
+//infrastructure (DIP)
+//solo cargan agregados para modificarlos y los agregan
+//las consultas para pantallas
+//y reportes van por IConsultasLectura (Consultas/ConsultasLectura.cs)
 
 public interface IProductoRepositorio
 {
@@ -85,21 +88,20 @@ public interface IUsuarioRepositorio
     Task<Usuario?> ObtenerPorNombreAsync(string nombreUsuario, CancellationToken ct = default);
 }
 
-/// <summary>
-/// Unit of Work: materializado por el DbContext y una transacción real de base de datos.
-/// </summary>
+//unit of Work: materializado por el DbContext y una transaccion real de base de datos
 public interface IUnidadDeTrabajo
 {
     Task GuardarCambiosAsync(CancellationToken ct = default);
 
-    /// <summary>Ejecuta la operación en una transacción; confirma si termina bien y revierte si lanza.</summary>
+    //ejecuta la operacion en una transaccion
+    //confirma si termina bien y revierte si lanza
     Task<T> EnTransaccionAsync<T>(Func<CancellationToken, Task<T>> operacion, CancellationToken ct = default);
 
-    /// <summary>Descarta los cambios en memoria no guardados (tras un rollback).</summary>
+    //descarta los cambios en memoria no guardados (tras un rollback)
     void DescartarCambios();
 }
 
-/// <summary>Creación, migración, semilla idempotente y restablecimiento controlado de la base.</summary>
+//creacion, migracion, semilla idempotente y restablecimiento controlado de la base
 public interface IInicializadorBaseDatos
 {
     Task InicializarAsync(CancellationToken ct = default);

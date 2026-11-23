@@ -4,10 +4,9 @@ using LogiMarket.Domain.Comun;
 
 namespace LogiMarket.Infrastructure.Pagos;
 
-/// <summary>
-/// Patrón Adapter: adapta <see cref="PasarelaLegadaSimulada.CobrarCentavos(long, string)"/> al contrato
-/// <see cref="IPasarelaPago.CobrarAsync"/> (decimal + clave) sin modificar el código legado.
-/// </summary>
+//patron adapter (estructural)
+//clase PasarelaLegadaAdapter
+//objetivo: adapta CobrarCentavos al contrato CobrarAsync (decimal + clave) sin modificar el codigo legado
 public sealed class PasarelaLegadaAdapter : IPasarelaPago
 {
     private readonly PasarelaLegadaSimulada _legada;
@@ -20,7 +19,7 @@ public sealed class PasarelaLegadaAdapter : IPasarelaPago
     public Task<ResultadoCobro> CobrarAsync(decimal monto, string claveIdempotencia, CancellationToken ct = default)
     {
         ValidarEntrada(monto, claveIdempotencia);
-        // El sistema legado no conoce claves de idempotencia: el Adapter añade esa garantía del contrato.
+        //el sistema legado no conoce claves de idempotencia: el Adapter añade esa garantia del contrato
         var resultado = _autorizaciones.Obtener(claveIdempotencia, monto, () =>
         {
             var centavos = (long)(Dinero.Redondear(monto) * 100m);
@@ -34,13 +33,13 @@ public sealed class PasarelaLegadaAdapter : IPasarelaPago
 
     internal static void ValidarEntrada(decimal monto, string clave)
     {
-        // Precondiciones idénticas en ambos proveedores (LSP).
+        //precondiciones identicas en ambos proveedores (LSP)
         if (monto <= 0) throw new ArgumentOutOfRangeException(nameof(monto), "El monto debe ser positivo.");
         if (string.IsNullOrWhiteSpace(clave)) throw new ArgumentException("La clave de idempotencia es obligatoria.", nameof(clave));
     }
 }
 
-/// <summary>Segundo proveedor simulado, nativamente compatible y sustituible por DI.</summary>
+//segundo proveedor simulado, nativamente compatible y sustituible por DI
 public sealed class PasarelaModernaSimulada : IPasarelaPago
 {
     private readonly ConfiguracionDemo _demo;
@@ -74,7 +73,7 @@ public sealed class PasarelaModernaSimulada : IPasarelaPago
     }
 }
 
-/// <summary>Selecciona en tiempo de ejecución el proveedor activo (pantalla de demostración).</summary>
+//selecciona en tiempo de ejecucion el proveedor activo (pantalla de demostracion)
 public sealed class SelectorPasarela
 {
     private readonly IReadOnlyDictionary<string, IPasarelaPago> _proveedores;
@@ -86,14 +85,14 @@ public sealed class SelectorPasarela
         _demo = demo;
     }
 
-    /// <summary>Un proveedor no registrado es un error de configuración: no se elige otro en silencio.</summary>
+    //un proveedor no registrado es un error de configuracion: no se elige otro en silencio
     public IPasarelaPago Actual =>
         _proveedores.TryGetValue(_demo.ProveedorPago, out var p)
             ? p
             : throw new ExcepcionAplicacion("PROVEEDOR_DESCONOCIDO", $"Proveedor de cobro no registrado: {_demo.ProveedorPago}");
 }
 
-/// <summary>Reembolso simulado: genera una referencia única y deja traza.</summary>
+//reembolso simulado: genera una referencia unica y deja traza
 public sealed class ServicioReembolsoSimulado : IServicioReembolso
 {
     private readonly IBitacoraTecnica _bitacora;
@@ -108,12 +107,11 @@ public sealed class ServicioReembolsoSimulado : IServicioReembolso
     }
 }
 
-/// <summary>
-/// Idempotencia del lado del proveedor simulado (como las claves de idempotencia de una pasarela real):
-/// una clave ya AUTORIZADA devuelve la misma autorización sin volver a cobrar. Los rechazos no se recuerdan
-/// (decisión documentada) para que el pedido pueda reintentarse con la misma clave. Reutilizar una clave
-/// con otro monto es un error.
-/// </summary>
+//idempotencia del lado del proveedor simulado (como las claves de idempotencia de una pasarela real):
+//una clave ya AUTORIZADA devuelve la misma autorizacion sin volver a cobrar
+//los rechazos no se recuerdan (decision documentada) para que el pedido pueda reintentarse con la
+//misma clave
+//reutilizar una clave con otro monto es un error
 internal sealed class RegistroAutorizaciones
 {
     private readonly Dictionary<string, (decimal Monto, ResultadoCobro Resultado)> _aprobadas = new();

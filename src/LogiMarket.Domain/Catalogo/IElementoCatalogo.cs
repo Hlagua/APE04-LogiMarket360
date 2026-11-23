@@ -1,22 +1,24 @@
 namespace LogiMarket.Domain.Catalogo;
 
-/// <summary>
-/// Patrón Composite (componente). ProductoSimple es la hoja y KitCompuesto el compuesto.
-/// También es el "elemento" del patrón Visitor y el agregado del patrón Iterator.
-/// </summary>
+//patron composite (estructural)
+//interfaz IElementoCatalogo
+//rol: componente
+//objetivo: ProductoSimple es la hoja y KitCompuesto el compuesto
+//tambien es el "elemento" del patron Visitor y el agregado del patron Iterator
 public interface IElementoCatalogo
 {
     string Codigo { get; }
     string Nombre { get; }
     bool EsCompuesto { get; }
 
-    /// <summary>Precio calculado recursivamente (hoja: precio propio; kit: Σ hijo × cantidad).</summary>
+    //precio calculado recursivamente (hoja: precio propio
+    //kit: Σ hijo x cantidad)
     decimal Precio { get; }
 
-    /// <summary>Peso calculado recursivamente.</summary>
+    //peso calculado recursivamente
     decimal PesoKg { get; }
 
-    /// <summary>¿Este elemento es, o contiene directa o indirectamente, el código dado?</summary>
+    //este elemento es, o contiene directa o indirectamente, el codigo dado?
     bool Contiene(string codigo);
 
     void Aceptar(IVisitanteCatalogo visitante, int multiplicador = 1);

@@ -7,7 +7,9 @@ using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.WinForms.Vistas;
 
-/// <summary>12b. Demostración (solo ADMIN): proveedor simulado, fallos inducidos, Outbox y restablecer base de pruebas.</summary>
+//12b
+//demostracion (solo ADMIN):
+//proveedor simulado, fallos inducidos, Outbox y restablecer base de pruebas
 public sealed class VistaDemo : VistaBase
 {
     private readonly ComboBox _proveedor = Ui.Combo(120), _canal = Ui.Combo(100);

@@ -5,17 +5,16 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace LogiMarket.WinForms.Infraestructura;
 
-/// <summary>
-/// Ejecuta cada acción de la UI en un ámbito DI nuevo (un DbContext / Unidad de Trabajo por operación)
-/// y traduce las excepciones esperadas a mensajes claros. No contiene reglas de negocio.
-/// </summary>
+//ejecuta cada accion de la UI en un ambito DI nuevo (un DbContext / Unidad de Trabajo por operacion)
+//traduce las excepciones esperadas a mensajes claros
+//no contiene reglas de negocio
 public sealed class Ejecutor
 {
     private readonly IServiceProvider _raiz;
 
     public Ejecutor(IServiceProvider raiz) => _raiz = raiz;
 
-    /// <summary>Mensajes de estado (lo muestra la barra inferior del formulario principal).</summary>
+    //mensajes de estado (lo muestra la barra inferior del formulario principal)
     public event Action<string, bool>? Mensaje;
 
     public T Singleton<T>() where T : notnull => _raiz.GetRequiredService<T>();
@@ -40,7 +39,7 @@ public sealed class Ejecutor
         return ok;
     }
 
-    /// <summary>Muestra el resultado de una operación de aplicación.</summary>
+    //muestra el resultado de una operacion de aplicacion
     public bool Mostrar(ResultadoOperacion? r, bool dialogoEnExito = false)
     {
         if (r is null) return false;

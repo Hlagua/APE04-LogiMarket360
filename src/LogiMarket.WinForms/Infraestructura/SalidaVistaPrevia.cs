@@ -2,7 +2,7 @@ using LogiMarket.Application.Puertos;
 
 namespace LogiMarket.WinForms.Infraestructura;
 
-/// <summary>Implementador del Bridge en la presentación: muestra el comprobante en una ventana visible.</summary>
+//implementador del Bridge en la presentacion: muestra el comprobante en una ventana visible
 public sealed class SalidaVistaPrevia : ISalidaDocumento
 {
     public const string NombreMedio = "VistaPrevia";

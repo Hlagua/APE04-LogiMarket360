@@ -6,7 +6,8 @@ using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.WinForms.Vistas;
 
-/// <summary>12a. Auditoría y métricas: auditoría persistente, bitácora técnica, Outbox, comandos y Mediator.</summary>
+//12a
+//auditoria y metricas: auditoria persistente, bitacora tecnica, Outbox, comandos y Mediator
 public sealed class VistaAuditoria : VistaBase
 {
     private readonly IMediadorVistas _mediadorTrazas;

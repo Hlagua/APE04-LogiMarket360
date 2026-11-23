@@ -10,7 +10,8 @@ using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.WinForms.Vistas;
 
-/// <summary>05. Carrito y borrador: Builder al crear, Memento para deshacer/rehacer y valoración de Application.</summary>
+//05
+//carrito y borrador: Builder al crear, Memento para deshacer/rehacer y valoracion de Application
 public sealed class VistaCarrito : VistaBase
 {
     private readonly ComboBox _cliente = Ui.Combo(220), _entrega = Ui.Combo(110), _elemento = Ui.Combo(300);
@@ -46,7 +47,7 @@ public sealed class VistaCarrito : VistaBase
         Ui.Ajustable(_totales, this);
         Controls.Add(Ui.Layout("Carrito / borrador", seleccion, agregar, _lineas, _totales, acciones));
 
-        // Atajos de teclado para deshacer/rehacer.
+        //atajos de teclado para deshacer/rehacer
         KeyDown += (_, e) =>
         {
             if (e.Control && e.KeyCode == Keys.Z) { Aplicar(ed => ed.Deshacer()); e.Handled = true; }
@@ -89,7 +90,7 @@ public sealed class VistaCarrito : VistaBase
         Mostrar();
     }
 
-    /// <summary>Abre un borrador existente (enviado por el Mediator desde Pedidos).</summary>
+    //abre un borrador existente (enviado por el Mediator desde Pedidos)
     public override async Task RecibirPedidoAsync(int pedidoId)
     {
         if (!ConfirmarDescarte()) return;
@@ -117,7 +118,7 @@ public sealed class VistaCarrito : VistaBase
     {
         if (_editor is null)
         {
-            // El editor solo conserva colaboradores singleton (valoración), por eso el ámbito puede cerrarse.
+            //el editor solo conserva colaboradores singleton (valoracion), por eso el ambito puede cerrarse
             using var scope = Ejecutor.Singleton<IServiceProvider>().CreateScope();
             _editor = scope.ServiceProvider.GetRequiredService<IServicioPedidos>().NuevoEditor();
             _editor.CambiarEntrega((TipoEntrega)_entrega.SelectedItem!);
@@ -154,7 +155,7 @@ public sealed class VistaCarrito : VistaBase
         if (LineaSeleccionada() is { } codigo && Ui.Confirmar($"¿Quitar la línea {codigo}? (puede deshacerlo)")) Aplicar(e => e.Quitar(codigo));
     }
 
-    /// <summary>Aplica un cambio sobre el editor mostrando reglas violadas como mensajes claros.</summary>
+    //aplica un cambio sobre el editor mostrando reglas violadas como mensajes claros
     private void Aplicar(Action<EditorBorrador> cambio)
     {
         if (_cargando) return;
@@ -216,7 +217,7 @@ public sealed class VistaCarrito : VistaBase
             return;
         }
         Ejecutor.Estado($"PED-{id:000000} VALIDADO ({string.Join(" → ", v.Recorrido)}).");
-        _editor = null; // un pedido validado ya no es editable
+        _editor = null; //un pedido validado ya no es editable
         Mostrar();
         await NotificarAsync(EventoVista.PedidoCambiado, id);
     }

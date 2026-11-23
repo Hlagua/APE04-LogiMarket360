@@ -8,7 +8,7 @@ using LogiMarket.Domain.Pedidos;
 
 namespace LogiMarket.Application.Pedidos;
 
-/// <summary>Comandos de pedidos: borradores, validación (Chain), cancelación (State) y clonación (Prototype).</summary>
+//comandos de pedidos: borradores, validacion (Chain), cancelacion (State) y clonacion (Prototype)
 public sealed class ServicioPedidos : IServicioPedidos
 {
     private readonly IPedidoRepositorio _pedidos;
@@ -39,7 +39,7 @@ public sealed class ServicioPedidos : IServicioPedidos
         _reloj = reloj;
     }
 
-    // ---------------- Borradores ----------------
+    //borradores
 
     public EditorBorrador NuevoEditor()
     {
@@ -55,7 +55,7 @@ public sealed class ServicioPedidos : IServicioPedidos
         return new EditorBorrador(_valoracion, pedido);
     }
 
-    /// <summary>Persiste el borrador del editor (alta o reemplazo de su contenido).</summary>
+    //persiste el borrador del editor (alta o reemplazo de su contenido)
     public async Task<ResultadoOperacion<int>> GuardarBorradorAsync(EditorBorrador editor, CancellationToken ct = default)
     {
         _autorizacion.Exigir(Operacion.GestionarBorradores);
@@ -82,7 +82,7 @@ public sealed class ServicioPedidos : IServicioPedidos
         return ResultadoOperacion<int>.Ok(borrador.Id, $"Borrador {borrador.Numero} guardado. Total USD {Dinero.Formatear(borrador.Total)}.");
     }
 
-    // ---------------- Validación (Chain) ----------------
+    //validacion (Chain)
 
     public async Task<ResultadoValidacion> ValidarAsync(int pedidoId, CancellationToken ct = default)
     {
@@ -98,7 +98,7 @@ public sealed class ServicioPedidos : IServicioPedidos
         return resultado;
     }
 
-    /// <summary>Evalúa la cadena sin cambiar el estado (diagnóstico para la UI y pruebas).</summary>
+    //evalua la cadena sin cambiar el estado (diagnostico para la UI y pruebas)
     public async Task<ResultadoValidacion> DiagnosticarAsync(int pedidoId, CancellationToken ct = default)
     {
         _autorizacion.Exigir(Operacion.ConsultarInformacion);
@@ -114,7 +114,7 @@ public sealed class ServicioPedidos : IServicioPedidos
         return _cadena.Validar(new ContextoValidacion { Pedido = pedido, Cliente = cliente, StockDisponible = stock, Usuario = _sesion.Usuario });
     }
 
-    // ---------------- Cancelación (State) ----------------
+    //cancelacion (State)
 
     public async Task<ResultadoOperacion> CancelarAsync(int pedidoId, string motivo, CancellationToken ct = default)
     {
@@ -126,9 +126,9 @@ public sealed class ServicioPedidos : IServicioPedidos
         return ResultadoOperacion.Ok($"Pedido {pedido.Numero} cancelado.");
     }
 
-    // ---------------- Prototype ----------------
+    //prototype
 
-    /// <summary>Clona un pedido existente (plantilla) como un BORRADOR nuevo sin id, pago ni historial.</summary>
+    //clona un pedido existente (plantilla) como un BORRADOR nuevo sin id, pago ni historial
     public async Task<ResultadoOperacion<int>> ClonarComoBorradorAsync(int pedidoId, CancellationToken ct = default)
     {
         _autorizacion.Exigir(Operacion.GestionarBorradores);

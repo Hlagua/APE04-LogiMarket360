@@ -3,10 +3,8 @@ using LogiMarket.Domain.Comun;
 
 namespace LogiMarket.Domain.Pedidos;
 
-/// <summary>
-/// Línea de venta con INSTANTÁNEA del precio y de la composición del kit al momento de registrarla.
-/// Cambios posteriores del catálogo no la alteran.
-/// </summary>
+//linea de venta con INSTANTANEA del precio y de la composicion del kit al momento de registrarla
+//cambios posteriores del catalogo no la alteran
 public class PedidoDetalle : IPrototipo<PedidoDetalle>
 {
     private readonly List<PedidoDetalleComponente> _componentes = new();
@@ -36,7 +34,7 @@ public class PedidoDetalle : IPrototipo<PedidoDetalle>
             Cantidad = Guardia.CantidadPositiva(cantidad),
             PrecioUnitario = elemento.Precio
         };
-        // Iterator: expansión determinista a SKU finales para la instantánea.
+        //iterator: expansion determinista a SKU finales para la instantanea
         foreach (var grupo in elemento.ComponentesFisicos().GroupBy(c => c.Sku))
         {
             var primero = grupo.First();
@@ -48,7 +46,8 @@ public class PedidoDetalle : IPrototipo<PedidoDetalle>
 
     internal void CambiarCantidad(int cantidad) => Cantidad = Guardia.CantidadPositiva(cantidad);
 
-    /// <summary>Prototype: copia profunda; la colección de componentes es una referencia distinta.</summary>
+    //prototype: copia profunda
+    //la coleccion de componentes es una referencia distinta
     public PedidoDetalle Clonar()
     {
         var copia = new PedidoDetalle
@@ -64,7 +63,7 @@ public class PedidoDetalle : IPrototipo<PedidoDetalle>
     }
 }
 
-/// <summary>Instantánea de un SKU final dentro de una línea (cantidad por UNA unidad de la línea).</summary>
+//instantanea de un SKU final dentro de una linea (cantidad por UNA unidad de la linea)
 public class PedidoDetalleComponente : IPrototipo<PedidoDetalleComponente>
 {
     public int Id { get; private set; }

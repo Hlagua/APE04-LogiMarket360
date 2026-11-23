@@ -5,7 +5,8 @@ using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.WinForms.Formularios;
 
-/// <summary>01. Acceso: identificación local con usuario y contraseña (hash PBKDF2 en la base).</summary>
+//01
+//acceso: identificacion local con usuario y contraseña (hash PBKDF2 en la base)
 public sealed class FormLogin : Form
 {
     private readonly Ejecutor _ejecutor;

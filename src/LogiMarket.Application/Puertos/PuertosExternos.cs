@@ -5,23 +5,22 @@ public sealed record ResultadoCobro(bool Aprobado, string Referencia, string Pro
     public string CorrelacionId { get; init; } = "-";
 }
 
-/// <summary>
-/// Puerto de cobro simulado. Cadena en ejecución: PagoAutorizadoProxy → AuditoriaPagoDecorator →
-/// (PasarelaLegadaAdapter | PasarelaModernaSimulada).
-/// </summary>
+//puerto de cobro simulado
+//cadena en ejecucion:
+//PagoAutorizadoProxy -> AuditoriaPagoDecorator -> (PasarelaLegadaAdapter | PasarelaModernaSimulada)
 public interface IPasarelaPago
 {
     string Nombre { get; }
     Task<ResultadoCobro> CobrarAsync(decimal monto, string claveIdempotencia, CancellationToken ct = default);
 }
 
-/// <summary>Reembolso simulado separado del cobro (ISP: un proveedor de cobro no está obligado a reembolsar).</summary>
+//reembolso simulado separado del cobro (ISP: un proveedor de cobro no esta obligado a reembolsar)
 public interface IServicioReembolso
 {
     Task<string> ReembolsarAsync(int pedidoId, decimal monto, string referenciaPago, CancellationToken ct = default);
 }
 
-/// <summary>Producto del Factory Method de avisos.</summary>
+//producto del Factory Method de avisos
 public interface INotificador
 {
     string Canal { get; }
@@ -30,7 +29,7 @@ public interface INotificador
 
 public sealed record ResultadoSalida(bool Exito, string Medio, string Destino, int Caracteres);
 
-/// <summary>Implementador del patrón Bridge: medio por el que sale un comprobante.</summary>
+//implementador del patron Bridge: medio por el que sale un comprobante
 public interface ISalidaDocumento
 {
     string Nombre { get; }

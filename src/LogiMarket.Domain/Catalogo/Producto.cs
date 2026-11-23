@@ -2,10 +2,9 @@ using LogiMarket.Domain.Comun;
 
 namespace LogiMarket.Domain.Catalogo;
 
-/// <summary>
-/// Producto de catálogo persistido (valores ACTUALES). Las ventas guardan instantáneas aparte.
-/// Version es token de concurrencia optimista contra la sobreventa.
-/// </summary>
+//producto de catalogo persistido (valores ACTUALES)
+//las ventas guardan instantaneas aparte
+//version es token de concurrencia optimista contra la sobreventa
 public class Producto
 {
     public int Id { get; private set; }
@@ -63,7 +62,8 @@ public class Producto
         Version++;
     }
 
-    /// <summary>Ajuste manual (ADMIN). Devuelve la diferencia aplicada para registrar el movimiento.</summary>
+    //ajuste manual (ADMIN)
+    //devuelve la diferencia aplicada para registrar el movimiento
     public int AjustarStock(int nuevoStock)
     {
         Guardia.EnteroNoNegativo(nuevoStock, "stock");

@@ -10,7 +10,8 @@ using LogiMarket.Domain.Logistica;
 
 namespace LogiMarket.Application.Logistica;
 
-/// <summary>Comandos de logística: despacho (guía con la familia del Abstract Factory) y entrega. El seguimiento es una consulta (ServicioConsultas).</summary>
+//comandos de logistica: despacho (guia con la familia del Abstract Factory) y entrega
+//el seguimiento es una consulta (ServicioConsultas)
 public sealed class ServicioLogistica : IServicioLogistica
 {
     private readonly IPedidoRepositorio _pedidos;
@@ -51,12 +52,12 @@ public sealed class ServicioLogistica : IServicioLogistica
             var pedido = await _pedidos.ObtenerAsync(pedidoId, c)
                          ?? throw new ExcepcionAplicacion("PEDIDO_NO_EXISTE", $"No existe el pedido {pedidoId}.");
 
-            // Abstract Factory: plazo y guía de la MISMA familia que el pedido.
+            //abstract Factory: plazo y guia de la MISMA familia que el pedido
             var fabrica = _fabricas.Para(pedido.TipoEntrega);
             var plazo = fabrica.CrearCalculadoraPlazo();
             var guiaEnvio = fabrica.CrearGeneradorGuia().Generar(pedido.Id, pedido.ClienteNombre, pedido.PesoKg, ahora, plazo);
 
-            pedido.Despachar(ahora, _sesion.NombreUsuario, guiaEnvio.Numero); // State: solo desde PAGADO
+            pedido.Despachar(ahora, _sesion.NombreUsuario, guiaEnvio.Numero); //state: solo desde PAGADO
             _despachos.Agregar(new Despacho(pedido.Id, guiaEnvio.Numero, guiaEnvio.Familia, guiaEnvio.PlazoDias,
                 guiaEnvio.Etiqueta, ahora, guiaEnvio.FechaEstimada, _sesion.NombreUsuario));
             _outbox.Agregar(SerializadorEventos.AOutbox(new DespachoRegistrado(pedido.Id, pedido.ClienteNombre,
@@ -80,7 +81,7 @@ public sealed class ServicioLogistica : IServicioLogistica
             var ahora = _reloj.Ahora;
             var pedido = await _pedidos.ObtenerAsync(pedidoId, c)
                          ?? throw new ExcepcionAplicacion("PEDIDO_NO_EXISTE", $"No existe el pedido {pedidoId}.");
-            pedido.Entregar(ahora, _sesion.NombreUsuario); // State: solo desde DESPACHADO
+            pedido.Entregar(ahora, _sesion.NombreUsuario); //state: solo desde DESPACHADO
             var despacho = await _despachos.ObtenerPorPedidoAsync(pedidoId, c)
                            ?? throw new ExcepcionAplicacion("SIN_DESPACHO", "El pedido no tiene despacho registrado.");
             despacho.RegistrarEntrega(ahora);

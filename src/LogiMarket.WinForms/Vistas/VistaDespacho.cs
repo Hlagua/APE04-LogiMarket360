@@ -9,7 +9,8 @@ using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.WinForms.Vistas;
 
-/// <summary>08. Despacho y entrega (BODEGA/ADMIN): guía de la familia de entrega y seguimiento.</summary>
+//08
+//despacho y entrega (BODEGA/ADMIN): guia de la familia de entrega y seguimiento
 public sealed class VistaDespacho : VistaBase
 {
     private readonly DataGridView _grilla = Ui.Grilla();

@@ -11,7 +11,7 @@ public sealed record ResultadoFiltro(string Arbol, IReadOnlyList<PedidoResumenDt
 
 public enum TipoComprobante { Venta, Devolucion }
 
-/// <summary>Reportes: filtro con Interpreter, comprobantes con Bridge y vista masiva con Flyweight.</summary>
+//reportes: filtro con Interpreter, comprobantes con Bridge y vista masiva con Flyweight
 public sealed class ServicioReportes : IServicioReportes
 {
     private readonly IConsultasLectura _consultas;
@@ -30,16 +30,16 @@ public sealed class ServicioReportes : IServicioReportes
 
     public IEnumerable<string> MediosDisponibles => _salidas.Keys;
 
-    /// <summary>Interpreter: analiza el texto, construye el árbol y lo evalúa sobre los pedidos.</summary>
+    //interpreter: analiza el texto, construye el arbol y lo evalua sobre los pedidos
     public async Task<ResultadoFiltro> FiltrarPedidosAsync(string filtro, CancellationToken ct = default)
     {
         _autorizacion.Exigir(Operacion.ConsultarInformacion);
-        var expresion = AnalizadorFiltro.Analizar(filtro); // lanza ExcepcionSintaxisFiltro si es inválido
+        var expresion = AnalizadorFiltro.Analizar(filtro); //lanza ExcepcionSintaxisFiltro si es invalido
         var pedidos = await _consultas.PedidosAsync(ct);
         return new ResultadoFiltro(expresion.Describir(), pedidos.Where(expresion.Interpretar).ToList());
     }
 
-    /// <summary>Bridge: combina el tipo de comprobante con el medio de salida elegido.</summary>
+    //bridge: combina el tipo de comprobante con el medio de salida elegido
     public async Task<ResultadoSalida> EmitirComprobanteAsync(TipoComprobante tipo, int pedidoId, string medio, CancellationToken ct = default)
     {
         _autorizacion.Exigir(Operacion.EmitirComprobantes);

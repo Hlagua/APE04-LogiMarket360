@@ -20,16 +20,17 @@ public sealed class ResultadoConfirmacion : ResultadoOperacion
     public RechazoValidacion? Rechazo { get; init; }
 }
 
-/// <summary>Colaboradores de persistencia agrupados (evita un constructor inmanejable).</summary>
+//colaboradores de persistencia agrupados (evita un constructor inmanejable)
 public sealed record RepositoriosConfirmacion(IPedidoRepositorio Pedidos, IClienteRepositorio Clientes,
     IProductoRepositorio Productos, IPagoRepositorio Pagos, IMovimientoInventarioRepositorio Movimientos,
     IOutboxRepositorio Outbox, IAuditoriaRepositorio Auditoria);
 
-/// <summary>
-/// Patrón Facade: UNA operación de confirmación que coordina autorización, validación (Chain),
-/// valoración (Strategy + Abstract Factory), cobro (Proxy → Decorator → Adapter), stock, persistencia y
-/// Outbox en una sola transacción. No contiene SQL ni reglas de descuento: delega en sus colaboradores.
-/// </summary>
+//patron facade (estructural)
+//clase ConfirmacionPedidoFacade
+//objetivo: UNA operacion de confirmacion que coordina autorizacion, validacion (Chain)
+//valoracion (Strategy + Abstract Factory), cobro (Proxy -> Decorator -> Adapter), stock
+//persistencia y Outbox en una sola transaccion
+//no contiene SQL ni reglas de descuento: delega en sus colaboradores
 public sealed class ConfirmacionPedidoFacade : IConfirmacionPedido
 {
     private readonly IServicioAutorizacion _autorizacion;
@@ -71,7 +72,7 @@ public sealed class ConfirmacionPedidoFacade : IConfirmacionPedido
             var resultado = await _uow.EnTransaccionAsync(c => ConfirmarEnTransaccionAsync(pedidoId, claveIdempotencia, c), ct);
 
             _metricas.RegistrarConfirmacion(resultado.Total);
-            await _procesadorOutbox.ProcesarSinPropagarAsync(ct); // postconfirmación: Observer
+            await _procesadorOutbox.ProcesarSinPropagarAsync(ct); //postconfirmacion: Observer
             return resultado;
         }
         catch (ExcepcionValidacionPedido ex)
@@ -80,12 +81,12 @@ public sealed class ConfirmacionPedidoFacade : IConfirmacionPedido
         }
         catch (AccesoDenegadoException ex)
         {
-            // La denegación ya la contó quien la originó (ServicioAutorizacion o PagoAutorizadoProxy).
+            //la denegacion ya la conto quien la origino (ServicioAutorizacion o PagoAutorizadoProxy)
             return await RechazarAsync(pedidoId, "ACCESO_DENEGADO", ex.Message, null, ct, "SEGURIDAD");
         }
         catch (ExcepcionConcurrencia ex)
         {
-            // Otra transacción ganó la carrera: si fue con la misma clave, se devuelve su resultado.
+            //otra transaccion gano la carrera: si fue con la misma clave, se devuelve su resultado
             var repetido = await ResultadoPreviaAsync(pedidoId, claveIdempotencia, ct);
             return repetido ?? await RechazarAsync(pedidoId, ex.Codigo, "Conflicto de concurrencia: el stock o el pedido cambió. " + ex.Message, null, ct);
         }
@@ -121,7 +122,7 @@ public sealed class ConfirmacionPedidoFacade : IConfirmacionPedido
         var productos = (await _repos.Productos.ObtenerPorSkusAsync(requerimiento.Keys, ct))
             .ToDictionary(p => p.Sku, StringComparer.OrdinalIgnoreCase);
 
-        // 1) Chain of Responsibility
+        //paso 1: validar el pedido con la cadena (Chain of Responsibility)
         var validacion = _cadena.Validar(new ContextoValidacion
         {
             Pedido = pedido,
@@ -131,11 +132,11 @@ public sealed class ConfirmacionPedidoFacade : IConfirmacionPedido
         });
         if (!validacion.EsValido) throw new ExcepcionValidacionPedido(validacion.Rechazo!);
 
-        // 2) Valoración (Strategy + Abstract Factory) y transición BORRADOR → VALIDADO si corresponde
+        //paso 2: valoracion (Strategy + Abstract Factory) y transicion BORRADOR -> VALIDADO si corresponde
         _valoracion.Valorar(pedido);
         if (pedido.Estado == EstadoPedido.BORRADOR) pedido.Validar(ahora, usuario);
 
-        // 3) Stock: una sola vez, por SKU final, con movimiento negativo trazable
+        //paso 3: descontar el stock una sola vez por SKU final, con su movimiento de salida
         foreach (var (sku, cantidad) in requerimiento)
         {
             var producto = productos[sku];
@@ -144,20 +145,22 @@ public sealed class ConfirmacionPedidoFacade : IConfirmacionPedido
                 MotivoMovimiento.VENTA, pedido.Numero, ahora, usuario));
         }
 
-        // 4) State: VALIDADO → PAGADO (rechaza estados inválidos)
+        //paso 4: pasar a PAGADO con el State (rechaza estados invalidos)
         pedido.RegistrarPago(clave, ahora, usuario);
 
-        // 5) Se escriben estado y stock ANTES de cobrar: un conflicto de concurrencia o una restricción
-        //    única se detecta aquí, sin haber cobrado. Nada se confirma hasta el commit final.
+        //paso 5: se guardan estado y stock ANTES de cobrar
+        //asi un conflicto de concurrencia o de clave unica se detecta sin haber cobrado
+        //nada queda confirmado hasta el commit final
         await _uow.GuardarCambiosAsync(ct);
 
-        // 6) Cobro protegido (Proxy → Decorator → Adapter). La pasarela es idempotente por clave: si algo
-        //    falla después de aprobar y la transacción se revierte, el reintento con la misma clave recibe la
-        //    misma autorización y no se cobra dos veces.
+        //paso 6: cobro protegido (Proxy -> Decorator -> Adapter)
+        //la pasarela es idempotente por clave
+        //si algo falla despues de aprobar y se revierte la transaccion,
+        //el reintento con la misma clave recibe la misma autorizacion y no se cobra dos veces
         var cobro = await _pasarela.CobrarAsync(pedido.Total, clave, ct);
         if (!cobro.Aprobado) throw new ExcepcionCobroRechazado($"Cobro rechazado por {cobro.Proveedor}: {cobro.Mensaje}");
 
-        // 7) Pago + Outbox + auditoría en la MISMA transacción
+        //paso 7: pago + Outbox + auditoria en la MISMA transaccion
         _repos.Pagos.Agregar(Pago.Aprobado(pedido.Id, cobro.Referencia, clave, pedido.Total, cobro.Proveedor, cobro.CorrelacionId, ahora));
         _repos.Outbox.Agregar(SerializadorEventos.AOutbox(new PedidoPagado(pedido.Id, pedido.ClienteNombre,
             pedido.ClienteEmail, pedido.ClienteTelefono, ahora, pedido.Total, cobro.Referencia)));
@@ -177,7 +180,7 @@ public sealed class ConfirmacionPedidoFacade : IConfirmacionPedido
         };
     }
 
-    /// <summary>Idempotencia: si ya existe un pago con esa clave, se devuelve el resultado original.</summary>
+    //idempotencia: si ya existe un pago con esa clave, se devuelve el resultado original
     private async Task<ResultadoConfirmacion?> ResultadoPreviaAsync(int pedidoId, string clave, CancellationToken ct)
     {
         _uow.DescartarCambios();
@@ -205,7 +208,8 @@ public sealed class ConfirmacionPedidoFacade : IConfirmacionPedido
     private async Task<ResultadoConfirmacion> RechazarAsync(int pedidoId, string codigo, string mensaje,
         RechazoValidacion? rechazo, CancellationToken ct, string categoria = "RECHAZO")
     {
-        // La transacción ya se revirtió; la auditoría del rechazo se guarda aparte.
+        //la transaccion ya se revirtio
+        //la auditoria del rechazo se guarda aparte
         _uow.DescartarCambios();
         try
         {

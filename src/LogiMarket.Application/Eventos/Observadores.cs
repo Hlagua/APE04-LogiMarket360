@@ -8,7 +8,7 @@ using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.Application.Eventos;
 
-/// <summary>Convierte eventos de negocio a/desde el payload JSON guardado en el Outbox.</summary>
+//convierte eventos de negocio a/desde el payload JSON guardado en el Outbox
 public static class SerializadorEventos
 {
     private static readonly Dictionary<string, Type> Tipos = new()
@@ -31,14 +31,16 @@ public static class SerializadorEventos
     }
 }
 
-/// <summary>Patrón Observer: suscriptor de eventos de negocio.</summary>
+//patron observer (comportamental)
+//interfaz IObservadorEventos
+//objetivo: suscriptor de eventos de negocio
 public interface IObservadorEventos
 {
     string Nombre { get; }
     Task ActualizarAsync(EventoNegocio evento, CancellationToken ct = default);
 }
 
-/// <summary>Sujeto del Observer: notifica a todos los suscriptores, en orden de suscripción.</summary>
+//sujeto del Observer: notifica a todos los suscriptores, en orden de suscripcion
 public sealed class PublicadorEventos : IPublicadorEventos
 {
     private readonly List<IObservadorEventos> _observadores = new();
@@ -61,11 +63,10 @@ public sealed class PublicadorEventos : IPublicadorEventos
     }
 }
 
-/// <summary>
-/// Observador 1: envía el aviso por el canal configurado (usa el Factory Method). Es idempotente por
-/// evento: apenas el aviso sale, guarda una constancia (categoría NOTIFICACION) en su propia escritura.
-/// Si después falla otro observador y el evento se reintenta, el aviso no se vuelve a enviar.
-/// </summary>
+//observador 1: envia el aviso por el canal configurado (usa el Factory Method)
+//es idempotente por evento:
+//apenas el aviso sale, guarda una constancia (categoria NOTIFICACION) en su propia escritura
+//si despues falla otro observador y el evento se reintenta, el aviso no se vuelve a enviar
 public sealed class ObservadorNotificaciones : IObservadorEventos
 {
     public const string Categoria = "NOTIFICACION";
@@ -106,11 +107,11 @@ public sealed class ObservadorNotificaciones : IObservadorEventos
         if (!deOutbox) return;
         _auditoria.Agregar(new Domain.Eventos.Auditoria(_reloj.Ahora, "sistema", Categoria, evento.Tipo,
             $"Aviso por {creador.Canal}: {detalle}", evento.EventoOutboxId));
-        await _uow.GuardarCambiosAsync(ct); // constancia inmediata, independiente del resto de observadores
+        await _uow.GuardarCambiosAsync(ct); //constancia inmediata, independiente del resto de observadores
     }
 }
 
-/// <summary>Observador 2: deja constancia en la auditoría persistente (idempotente por evento).</summary>
+//observador 2: deja constancia en la auditoria persistente (idempotente por evento)
 public sealed class ObservadorAuditoria : IObservadorEventos
 {
     public const string Categoria = "EVENTO";
@@ -134,7 +135,7 @@ public sealed class ObservadorAuditoria : IObservadorEventos
     }
 }
 
-/// <summary>Observador 3: actualiza las métricas de sesión (Singleton), una vez por evento.</summary>
+//observador 3: actualiza las metricas de sesion (Singleton), una vez por evento
 public sealed class ObservadorMetricas : IObservadorEventos
 {
     private readonly IMetricasSesion _metricas;

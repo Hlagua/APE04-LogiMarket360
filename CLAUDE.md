@@ -45,3 +45,4 @@ bodega/Bodega123!, consulta/Consulta123!.
 - Pruebas: `tests/LogiMarket.Tests` (DisplayName con el caso P01–P38). Soporte: `Soporte/EntornoPrueba.cs`.
   Evidencia esperado/obtenido: `Soporte/Evidencia.Registrar(...)`. Corren en serie (Singleton real).
 - Commits: solo a nombre del usuario, sin línea Co-Authored-By.
+- Comentarios: `//texto` en minúscula, sin tildes ni punto final, sin `///`; patrones con `//patron x (familia)`, `//clase X`, `//objetivo: ...`.

@@ -4,7 +4,7 @@ using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.Application.Entrega;
 
-/// <summary>Todo producto de una familia de entrega declara su familia para impedir mezclas.</summary>
+//todo producto de una familia de entrega declara su familia para impedir mezclas
 public interface IProductoEntrega
 {
     string Familia { get; }
@@ -28,10 +28,10 @@ public interface IGeneradorGuia : IProductoEntrega
     GuiaEnvio Generar(int pedidoId, string cliente, decimal pesoKg, DateTime fecha, ICalculadoraPlazo plazo);
 }
 
-/// <summary>
-/// Patrón Abstract Factory: cada fábrica crea una FAMILIA coherente (tarifa, plazo, guía).
-/// El caso de uso trabaja solo con esta interfaz.
-/// </summary>
+//patron abstract factory (creacional)
+//interfaz IFabricaEntrega
+//objetivo: cada fabrica crea una FAMILIA coherente (tarifa, plazo, guia)
+//el caso de uso trabaja solo con esta interfaz
 public interface IFabricaEntrega
 {
     TipoEntrega Tipo { get; }
@@ -41,7 +41,7 @@ public interface IFabricaEntrega
     IGeneradorGuia CrearGeneradorGuia();
 }
 
-// ---------------- Familia ESTÁNDAR ----------------
+//familia ESTANDAR
 
 public sealed class EntregaEstandarFactory : IFabricaEntrega
 {
@@ -80,7 +80,7 @@ public sealed class EntregaEstandarFactory : IFabricaEntrega
     }
 }
 
-// ---------------- Familia EXPRÉS ----------------
+//familia EXPRES
 
 public sealed class EntregaExpresFactory : IFabricaEntrega
 {
@@ -129,10 +129,10 @@ internal static class FamiliaCoherente
     }
 }
 
-/// <summary>Paquete coherente producido por UNA sola fábrica.</summary>
+//paquete coherente producido por UNA sola fabrica
 public sealed record PaqueteEntrega(string Familia, decimal Tarifa, int PlazoDias, ICalculadoraPlazo Plazo, IGeneradorGuia Generador);
 
-/// <summary>Selecciona la fábrica concreta según el tipo de entrega del pedido.</summary>
+//selecciona la fabrica concreta segun el tipo de entrega del pedido
 public sealed class ProveedorFabricasEntrega : IProveedorFabricasEntrega
 {
     private readonly IReadOnlyDictionary<TipoEntrega, IFabricaEntrega> _fabricas;

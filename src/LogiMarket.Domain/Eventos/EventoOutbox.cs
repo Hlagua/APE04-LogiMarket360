@@ -1,9 +1,8 @@
 namespace LogiMarket.Domain.Eventos;
 
-/// <summary>
-/// Evento pendiente (patrón Outbox): se inserta en la MISMA transacción que la operación de negocio y
-/// se procesa después de confirmarla. Se marca procesado una sola vez.
-/// </summary>
+//evento pendiente (patron Outbox):
+//se inserta en la MISMA transaccion que la operacion de negocio y se procesa despues de confirmarla
+//se marca procesado una sola vez
 public class EventoOutbox
 {
     public int Id { get; private set; }
@@ -29,7 +28,7 @@ public class EventoOutbox
 
     public void MarcarProcesado(DateTime fecha)
     {
-        if (Procesado) return; // idempotente
+        if (Procesado) return; //idempotente
         Intentos++;
         FechaProcesado = fecha;
         UltimoError = null;
@@ -42,7 +41,7 @@ public class EventoOutbox
     }
 }
 
-/// <summary>Auditoría de negocio y de seguridad persistida.</summary>
+//auditoria de negocio y de seguridad persistida
 public class Auditoria
 {
     public int Id { get; private set; }

@@ -18,7 +18,7 @@ using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.Tests.Integracion;
 
-/// <summary>Pruebas de integración con SQLite real (una base nueva por prueba).</summary>
+//pruebas de integracion con SQLite real (una base nueva por prueba)
 public class FlujosNegocioTests
 {
     [Fact(DisplayName = "P01 Base creada desde archivo inexistente; semilla idempotente sin duplicados")]
@@ -27,7 +27,7 @@ public class FlujosNegocioTests
         await using var e = await EntornoPrueba.CrearAsync();
         Assert.True(File.Exists(e.RutaBaseDatos));
         using (var scope = e.Proveedor.CreateScope())
-            await scope.ServiceProvider.GetRequiredService<IInicializadorBaseDatos>().InicializarAsync(); // relanzar semilla
+            await scope.ServiceProvider.GetRequiredService<IInicializadorBaseDatos>().InicializarAsync(); //relanzar semilla
 
         var conteos = await e.Db(async db => (
             await db.Productos.CountAsync(), await db.Kits.CountAsync(), await db.Usuarios.CountAsync(),
@@ -126,7 +126,7 @@ public class FlujosNegocioTests
         await AfirmarSinEfectos(e, id, EstadoPedido.BORRADOR);
 
         e.Unico<ConfiguracionDemo>().ForzarErrorPasarela = false;
-        Assert.True((await e.Confirmar(id)).Exito); // el mismo pedido se puede reintentar después
+        Assert.True((await e.Confirmar(id)).Exito); //el mismo pedido se puede reintentar despues
     }
 
     [Fact(DisplayName = "P07 Misma clave de idempotencia: un pago, un movimiento por SKU y resultado original")]
@@ -176,7 +176,7 @@ public class FlujosNegocioTests
             Assert.Throws<ExcepcionDominio>(() => pedido!.ActualizarPrecioLinea(CatalogoPrueba.Elemento("KIT_TELETRABAJO")));
         }
 
-        // Cambiar el precio actual del catálogo no altera la instantánea del pedido pagado.
+        //cambiar el precio actual del catalogo no altera la instantanea del pedido pagado
         await e.IniciarSesion("admin");
         await e.Usar<IServicioCatalogo, ResultadoOperacion>(s =>
             s.ActualizarProductoAsync(new Application.Catalogo.ProductoEdicion("P01", "Mouse USB", "Periféricos", "", 99m, 0.2m, 0)));
@@ -194,7 +194,7 @@ public class FlujosNegocioTests
         await e.Confirmar(pagado);
         var sinPago = await e.CrearBorrador("Luis", TipoEntrega.ESTANDAR, ("P05", 1));
 
-        // VENTAS no puede despachar (autorización en Application, no en botones).
+        //VENTAS no puede despachar (autorizacion en Application, no en botones)
         await Assert.ThrowsAsync<AccesoDenegadoException>(() => e.Usar<IServicioLogistica, ResultadoOperacion<string>>(s => s.DespacharAsync(pagado)));
 
         await e.IniciarSesion("bodega");
@@ -220,7 +220,7 @@ public class FlujosNegocioTests
         ruta = Path.Combine(carpeta, "persistente.db");
         var opciones = new Infrastructure.OpcionesLogiMarket { RutaBaseDatos = ruta, CarpetaSalidas = carpeta };
 
-        // Sesión 1
+        //sesion 1
         await using (var sp1 = Infrastructure.RegistroDependencias.AgregarLogiMarket(new ServiceCollection(), opciones).BuildServiceProvider())
         {
             using (var s = sp1.CreateScope()) await s.ServiceProvider.GetRequiredService<IInicializadorBaseDatos>().InicializarAsync();
@@ -238,7 +238,7 @@ public class FlujosNegocioTests
         }
         Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
 
-        // Sesión 2 (proceso "reabierto")
+        //sesion 2 (proceso "reabierto")
         await using (var sp2 = Infrastructure.RegistroDependencias.AgregarLogiMarket(new ServiceCollection(), opciones).BuildServiceProvider())
         {
             using (var s = sp2.CreateScope()) await s.ServiceProvider.GetRequiredService<IInicializadorBaseDatos>().InicializarAsync();
@@ -249,7 +249,7 @@ public class FlujosNegocioTests
             Assert.Equal(7, await db.Productos.Where(p => p.Sku == "P01").Select(p => p.Stock).SingleAsync());
             Assert.Equal("P10", (await db.Pagos.SingleAsync()).ClaveIdempotencia);
             Assert.True(await db.Auditorias.AnyAsync(a => a.Accion == "PEDIDO_CONFIRMADO"));
-            Assert.Equal(5, await db.Productos.CountAsync()); // la semilla no duplicó
+            Assert.Equal(5, await db.Productos.CountAsync()); //la semilla no duplico
         }
         Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
         try { Directory.Delete(carpeta, true); } catch (IOException) { }
@@ -280,8 +280,8 @@ public class FlujosNegocioTests
         var comando = new ConfirmarPedidoCommand(scope.ServiceProvider.GetRequiredService<IConfirmacionPedido>(), id,
             await e.ClaveDefecto(id));
 
-        var r1 = await invocador.EjecutarAsync(comando);  // "botón"
-        var r2 = await invocador.EjecutarAsync(comando);  // reintento de "prueba"
+        var r1 = await invocador.EjecutarAsync(comando); //"boton"
+        var r2 = await invocador.EjecutarAsync(comando); //reintento de "prueba"
         Assert.True(r1.Exito);
         Assert.Equal("YA_CONFIRMADO", r2.Codigo);
         Assert.Equal(2, invocador.Historial.Count);
@@ -304,7 +304,7 @@ public class FlujosNegocioTests
         Assert.Equal(1, await e.Db(db => db.Auditorias.CountAsync(a => a.Categoria == ObservadorAuditoria.Categoria && a.Accion == "PedidoPagado")));
         Assert.Contains("ana@ejemplo.test", File.ReadAllText(Path.Combine(e.CarpetaSalidas, "notificaciones.log")));
 
-        // Reprocesar no duplica (el evento ya está marcado).
+        //reprocesar no duplica (el evento ya esta marcado)
         var otra = await e.Usar<IProcesadorOutbox, ResultadoProcesoOutbox>(p => p.ProcesarPendientesAsync());
         Assert.Equal(0, otra.Procesados);
         Assert.Equal(1, metricas.Instantanea().Notificaciones);
@@ -325,7 +325,7 @@ public class FlujosNegocioTests
         Assert.Equal(3, await e.Stock("P04"));
         Assert.Equal(0, await e.Db(db => db.Devoluciones.CountAsync()));
 
-        e.Reloj.AvanzarDias(10); // día 20
+        e.Reloj.AvanzarDias(10); //dia 20
         var r2 = await Devolver(e, defecto, MotivoDevolucion.DEFECTO);
         Assert.True(r2.Exito, r2.Mensaje);
         Assert.Equal(20, r2.DiasDesdeEntrega);
@@ -399,7 +399,7 @@ public class FlujosNegocioTests
         demo.ForzarFalloNotificador = true;
         var id = await e.CrearBorrador("Ana", TipoEntrega.ESTANDAR, ("KIT_TELETRABAJO", 1));
         var r = await e.Confirmar(id);
-        Assert.True(r.Exito); // el negocio se confirmó aunque el aviso falle
+        Assert.True(r.Exito); //el negocio se confirmo aunque el aviso falle
 
         var pendiente = await e.Db(db => db.EventosOutbox.SingleAsync());
         Assert.Null(pendiente.FechaProcesado);
@@ -408,7 +408,7 @@ public class FlujosNegocioTests
         Assert.Equal(0, await e.Db(db => db.Auditorias.CountAsync(a => a.Categoria == ObservadorAuditoria.Categoria)));
 
         demo.ForzarFalloNotificador = false;
-        var recuperado = await e.Usar<IProcesadorOutbox, ResultadoProcesoOutbox>(p => p.ProcesarPendientesAsync()); // procesador "reiniciado"
+        var recuperado = await e.Usar<IProcesadorOutbox, ResultadoProcesoOutbox>(p => p.ProcesarPendientesAsync()); //procesador "reiniciado"
         var otraVez = await e.Usar<IProcesadorOutbox, ResultadoProcesoOutbox>(p => p.ProcesarPendientesAsync());
 
         Assert.Equal(1, recuperado.Procesados);
@@ -417,7 +417,7 @@ public class FlujosNegocioTests
         Assert.NotNull(evento.FechaProcesado);
         Assert.Equal(2, evento.Intentos);
         Assert.Equal(1, await e.Db(db => db.Auditorias.CountAsync(a => a.Categoria == ObservadorAuditoria.Categoria)));
-        Assert.Equal(1, await e.Db(db => db.Pagos.CountAsync())); // sin cobro duplicado
+        Assert.Equal(1, await e.Db(db => db.Pagos.CountAsync())); //sin cobro duplicado
     }
 
     [Fact(DisplayName = "P38 LSP: el flujo completo funciona igual con el proveedor LEGADO y el MODERNO")]
@@ -449,7 +449,7 @@ public class FlujosNegocioTests
         Assert.Throws<AccesoDenegadoException>(() => e.Proveedor.CreateScope().ServiceProvider.GetRequiredService<IServicioPedidos>().NuevoEditor());
         var r = await e.Confirmar(id);
         Assert.Equal("ACCESO_DENEGADO", r.Codigo);
-        Assert.Equal(2, e.Unico<IMetricasSesion>().Instantanea().OperacionesDenegadas); // NuevoEditor + Confirmar, sin duplicar
+        Assert.Equal(2, e.Unico<IMetricasSesion>().Instantanea().OperacionesDenegadas); //NuevoEditor + Confirmar, sin duplicar
         Assert.Empty(e.Unico<IBitacoraTecnica>().Entradas("PAGO"));
         Assert.Equal(8, await e.Stock("P01"));
     }
@@ -471,7 +471,7 @@ public class FlujosNegocioTests
         Assert.Equal(2, await e.Db(db => db.Kits.Where(k => k.Codigo == "KIT_OFICINA").SelectMany(k => k.Componentes).CountAsync()));
     }
 
-    // ---------------- Ayudas ----------------
+    //ayudas
 
     private static async Task AfirmarSinEfectos(EntornoPrueba e, int pedidoId, EstadoPedido estadoEsperado)
     {

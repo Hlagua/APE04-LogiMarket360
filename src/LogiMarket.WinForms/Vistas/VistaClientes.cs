@@ -8,7 +8,8 @@ using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.WinForms.Vistas;
 
-/// <summary>04. Clientes: búsqueda, registro, categoría y edición.</summary>
+//04
+//clientes: busqueda, registro, categoria y edicion
 public sealed class VistaClientes : VistaBase
 {
     private readonly TextBox _buscar = Ui.Texto(220, "Buscar nombre, identificación o email");

@@ -7,7 +7,8 @@ using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.WinForms.Vistas;
 
-/// <summary>02. Panel general: resumen de pedidos, existencias, alertas y métricas de sesión.</summary>
+//02
+//panel general: resumen de pedidos, existencias, alertas y metricas de sesion
 public sealed class VistaPanel : VistaBase
 {
     private readonly FlowLayoutPanel _tarjetas = new() { Dock = DockStyle.Top, AutoSize = true, WrapContents = true };

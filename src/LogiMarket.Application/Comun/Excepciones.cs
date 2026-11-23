@@ -1,6 +1,6 @@
 namespace LogiMarket.Application.Comun;
 
-/// <summary>El usuario de la sesión no tiene permiso para la operación (política en Application).</summary>
+//el usuario de la sesion no tiene permiso para la operacion (politica en Application)
 public sealed class AccesoDenegadoException : Exception
 {
     public string Operacion { get; }
@@ -8,7 +8,7 @@ public sealed class AccesoDenegadoException : Exception
     public AccesoDenegadoException(string operacion, string mensaje) : base(mensaje) => Operacion = operacion;
 }
 
-/// <summary>Una regla de aplicación rechazó la operación (validación, recurso inexistente...).</summary>
+//una regla de aplicacion rechazo la operacion (validacion, recurso inexistente...)
 public class ExcepcionAplicacion : Exception
 {
     public string Codigo { get; }
@@ -16,10 +16,8 @@ public class ExcepcionAplicacion : Exception
     public ExcepcionAplicacion(string codigo, string mensaje) : base(mensaje) => Codigo = codigo;
 }
 
-/// <summary>
-/// Conflicto de persistencia traducido por Infrastructure (concurrencia optimista o restricción única),
-/// para que Application no dependa de EF Core.
-/// </summary>
+//conflicto de persistencia traducido por Infrastructure (concurrencia optimista o restriccion unica)
+//para que Application no dependa de EF Core
 public sealed class ExcepcionConcurrencia : ExcepcionAplicacion
 {
     public ExcepcionConcurrencia(string mensaje, Exception? interna = null) : base("CONFLICTO_CONCURRENCIA", mensaje)

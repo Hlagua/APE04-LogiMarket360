@@ -1,6 +1,6 @@
 namespace LogiMarket.Domain.Comun;
 
-/// <summary>Validaciones de invariantes reutilizables (evita validaciones dispersas).</summary>
+//validaciones de invariantes reutilizables (evita validaciones dispersas)
 public static class Guardia
 {
     public static string Texto(string? valor, string campo, int max = 200)

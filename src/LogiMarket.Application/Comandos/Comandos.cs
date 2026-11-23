@@ -8,7 +8,9 @@ using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.Application.Comandos;
 
-/// <summary>Patrón Command: encapsula una petición (receptor + parámetros) como objeto.</summary>
+//patron command (comportamental)
+//interfaz IComando
+//objetivo: encapsula una peticion (receptor + parametros) como objeto
 public interface IComando
 {
     string Nombre { get; }
@@ -34,11 +36,9 @@ public sealed class ConfirmarPedidoCommand : IComando
     public async Task<ResultadoOperacion> EjecutarAsync(CancellationToken ct = default) =>
         await _receptor.ConfirmarAsync(PedidoId, ClaveIdempotencia, ct);
 
-    /// <summary>
-    /// Clave por defecto: una por pedido (un reintento no vuelve a cobrar). Incluye la fecha de creación para
-    /// que, tras restablecer la base de pruebas y reutilizarse los ids, un pedido nuevo no herede la
-    /// autorización que la pasarela recuerda para un pedido anterior con el mismo número.
-    /// </summary>
+    //clave por defecto: una por pedido (un reintento no vuelve a cobrar)
+    //incluye la fecha de creacion para que, tras restablecer la base de pruebas y reutilizarse los ids
+    //un pedido nuevo no herede la autorizacion que la pasarela recuerda para un pedido anterior con el mismo numero
     public static string ClavePorDefecto(int pedidoId, DateTime fechaCreacion) =>
         $"CONF-{pedidoId:000000}-{fechaCreacion:yyyyMMddHHmmssfff}";
 }
@@ -111,10 +111,9 @@ public sealed class ProcesarDevolucionCommand : IComando
 
 public sealed record RegistroComando(DateTime Fecha, string Usuario, string Comando, string Entrada, bool Exito, string Resultado);
 
-/// <summary>
-/// Invocador: ejecuta cualquier comando (botón de la UI o prueba automatizada), convierte excepciones en
-/// resultados y registra comando, entrada y resultado. No conoce a los receptores.
-/// </summary>
+//invocador: ejecuta cualquier comando (boton de la UI o prueba automatizada)
+//convierte excepciones en resultados y registra comando, entrada y resultado
+//no conoce a los receptores
 public sealed class InvocadorComandos : IInvocadorComandos
 {
     private readonly List<RegistroComando> _historial = new();

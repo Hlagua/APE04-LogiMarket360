@@ -4,11 +4,11 @@ using LogiMarket.Application.Puertos;
 
 namespace LogiMarket.Application.Reportes;
 
-/// <summary>
-/// Patrón Bridge (abstracción). El TIPO de comprobante (venta/devolución) varía independientemente del
-/// MEDIO de salida (<see cref="ISalidaDocumento"/>: vista previa / archivo TXT): 2 × 2 combinaciones sin
-/// crear cuatro clases.
-/// </summary>
+//patron bridge (estructural)
+//clase Comprobante
+//rol: abstraccion
+//objetivo: separar el TIPO de comprobante (venta/devolucion) del MEDIO de salida (vista previa / archivo TXT)
+//el medio llega por ISalidaDocumento, asi salen 2 x 2 combinaciones sin crear cuatro clases
 public abstract class Comprobante
 {
     protected readonly ISalidaDocumento Salida;
@@ -19,7 +19,7 @@ public abstract class Comprobante
 
     protected abstract void EscribirCuerpo(StringBuilder sb);
 
-    /// <summary>Importes con punto decimal y dos decimales, sin depender de la cultura del equipo.</summary>
+    //importes con punto decimal y dos decimales, sin depender de la cultura del equipo
     protected static readonly System.Globalization.CultureInfo Inv = System.Globalization.CultureInfo.InvariantCulture;
 
     public string GenerarContenido()

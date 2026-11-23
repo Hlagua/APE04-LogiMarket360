@@ -25,7 +25,8 @@ public sealed record ElementoVendibleDto(string Codigo, string Nombre, bool EsKi
 public sealed record DesgloseDto(string Codigo, decimal Precio, decimal PesoKg, IReadOnlyList<ComponenteFisico> ComponentesIterador,
     IReadOnlyList<LineaDesglose> LineasVisitor, IReadOnlyList<string> KitsVisitados, string ResumenPeso);
 
-/// <summary>Comandos del catálogo: productos, stock y kits (Composite con detección de ciclos). Las consultas están en ServicioConsultas.</summary>
+//comandos del catalogo: productos, stock y kits (Composite con deteccion de ciclos)
+//las consultas estan en ServicioConsultas
 public sealed class ServicioCatalogo : IServicioCatalogo
 {
     private readonly IProductoRepositorio _productos;
@@ -51,7 +52,7 @@ public sealed class ServicioCatalogo : IServicioCatalogo
         _reloj = reloj;
     }
 
-    // ---------------- Productos ----------------
+    //productos
 
     public async Task<ResultadoOperacion> CrearProductoAsync(ProductoEdicion datos, CancellationToken ct = default)
     {
@@ -110,7 +111,7 @@ public sealed class ServicioCatalogo : IServicioCatalogo
         return ResultadoOperacion.Ok($"Stock de {producto.Sku} ajustado a {producto.Stock}.");
     }
 
-    // ---------------- Kits (Composite) ----------------
+    //kits (Composite)
 
     public async Task<ResultadoOperacion> CrearKitAsync(string codigo, string nombre,
         IReadOnlyList<(string Codigo, int Cantidad)> componentes, CancellationToken ct = default)
@@ -136,7 +137,7 @@ public sealed class ServicioCatalogo : IServicioCatalogo
         var kit = await _kits.ObtenerPorCodigoAsync(codigoKit, ct)
                   ?? throw new ExcepcionAplicacion("KIT_NO_EXISTE", $"No existe el kit {codigoKit}.");
         await AgregarAKitAsync(kit, codigoComponente, cantidad, ct);
-        await ValidarArbolConAsync(kit, ct); // rechaza ciclos indirectos antes de guardar
+        await ValidarArbolConAsync(kit, ct); //rechaza ciclos indirectos antes de guardar
         Auditar("KIT_MODIFICADO", $"{kit.Codigo} + {codigoComponente}x{cantidad}");
         await _uow.GuardarCambiosAsync(ct);
         return ResultadoOperacion.Ok($"Componente agregado a {kit.Codigo}.");

@@ -23,17 +23,17 @@ public sealed class ResultadoDevolucion : ResultadoOperacion
     public IReadOnlyList<string> Pasos { get; init; } = Array.Empty<string>();
 }
 
-/// <summary>Colaboradores comunes de todas las variantes de devolución.</summary>
+//colaboradores comunes de todas las variantes de devolucion
 public sealed record DependenciasDevolucion(IPedidoRepositorio Pedidos, IProductoRepositorio Productos,
     IDevolucionRepositorio Devoluciones, IPagoRepositorio Pagos, IMovimientoInventarioRepositorio Movimientos,
     IOutboxRepositorio Outbox, IAuditoriaRepositorio Auditoria, IUnidadDeTrabajo Uow, IServicioReembolso Reembolso,
     ISesionActual Sesion, IReloj Reloj, IProcesadorOutbox ProcesadorOutbox, IMetricasSesion Metricas);
 
-/// <summary>
-/// Patrón Template Method. <see cref="EjecutarAsync"/> fija la secuencia invariante:
-/// verificar elegibilidad → inspeccionar condición → calcular reembolso → registrar devolución/stock →
-/// generar evento. Las variantes (Defecto, Arrepentimiento) solo personalizan los pasos permitidos.
-/// </summary>
+//patron template method (comportamental)
+//clase ProcesarDevolucion
+//objetivo: EjecutarAsync fija la secuencia invariante: verificar elegibilidad -> inspeccionar condicion ->
+//calcular reembolso -> registrar devolucion/stock -> generar evento
+//las variantes (Defecto, Arrepentimiento) solo personalizan los pasos permitidos
 public abstract class ProcesarDevolucion
 {
     private readonly DependenciasDevolucion _d;
@@ -42,19 +42,19 @@ public abstract class ProcesarDevolucion
 
     public abstract MotivoDevolucion Motivo { get; }
 
-    /// <summary>Días máximos desde la entrega (gancho obligatorio).</summary>
+    //dias maximos desde la entrega (gancho obligatorio)
     protected abstract int DiasMaximos { get; }
 
-    /// <summary>Paso 2 (gancho obligatorio): condición física del producto.</summary>
+    //paso 2 (gancho obligatorio): condicion fisica del producto
     protected abstract string? InspeccionarCondicion(SolicitudDevolucion solicitud);
 
-    /// <summary>Paso 3 (gancho opcional): por defecto, productos después del descuento y sin envío.</summary>
+    //paso 3 (gancho opcional): por defecto, productos despues del descuento y sin envio
     protected virtual decimal CalcularReembolso(Pedido pedido) => pedido.ImporteReembolsable;
 
-    /// <summary>Gancho opcional: ¿se reintegran las existencias?</summary>
+    //gancho opcional: se reintegran las existencias?
     protected virtual bool ReintegraStock => true;
 
-    /// <summary>MÉTODO PLANTILLA (no virtual): la estructura no cambia entre variantes.</summary>
+    //METODO PLANTILLA (no virtual): la estructura no cambia entre variantes
     public async Task<ResultadoDevolucion> EjecutarAsync(SolicitudDevolucion solicitud, CancellationToken ct = default)
     {
         var pasos = new List<string>();
@@ -67,7 +67,7 @@ public abstract class ProcesarDevolucion
                 var pedido = await _d.Pedidos.ObtenerAsync(solicitud.PedidoId, c)
                              ?? throw new ExcepcionAplicacion("PEDIDO_NO_EXISTE", $"No existe el pedido {solicitud.PedidoId}.");
 
-                // 1) Elegibilidad (común + plazo de la variante)
+                //paso 1: elegibilidad (comun + plazo de la variante)
                 pasos.Add("1-VerificarElegibilidad");
                 var dias = VerificarElegibilidad(pedido, ahora);
                 if (await _d.Devoluciones.ObtenerPorPedidoAsync(pedido.Id, c) is not null)
@@ -76,16 +76,16 @@ public abstract class ProcesarDevolucion
                     throw new ExcepcionDominio("FUERA_DE_PLAZO",
                         $"{Motivo}: han pasado {dias} días desde la entrega; el máximo es {DiasMaximos}.");
 
-                // 2) Inspección (variante)
+                //paso 2: inspeccion (variante)
                 pasos.Add("2-InspeccionarCondicion");
                 var problema = InspeccionarCondicion(solicitud);
                 if (problema is not null) throw new ExcepcionDominio("CONDICION_NO_ACEPTADA", problema);
 
-                // 3) Reembolso (variante opcional)
+                //paso 3: reembolso (variante opcional)
                 pasos.Add("3-CalcularReembolso");
                 var monto = Dinero.Redondear(CalcularReembolso(pedido));
 
-                // 4) Registro de devolución, stock y reembolso simulado único
+                //paso 4: registro de devolucion, stock y reembolso simulado unico
                 pasos.Add("4-RegistrarDevolucionYStock");
                 var pago = await _d.Pagos.ObtenerPorPedidoAsync(pedido.Id, c)
                            ?? throw new ExcepcionAplicacion("SIN_PAGO", "El pedido no registra un pago.");
@@ -95,7 +95,7 @@ public abstract class ProcesarDevolucion
                 _d.Devoluciones.Agregar(new Devolucion(pedido.Id, Motivo, ahora, dias, monto, referencia, ReintegraStock,
                     solicitud.Observacion, usuario));
 
-                // 5) Evento (Outbox en la misma transacción)
+                //paso 5: evento (Outbox en la misma transaccion)
                 pasos.Add("5-GenerarEvento");
                 _d.Outbox.Agregar(SerializadorEventos.AOutbox(new DevolucionAceptada(pedido.Id, pedido.ClienteNombre,
                     pedido.ClienteEmail, pedido.ClienteTelefono, ahora, monto, Motivo.ToString())));
@@ -128,7 +128,7 @@ public abstract class ProcesarDevolucion
 
     private static int VerificarElegibilidad(Pedido pedido, DateTime ahora)
     {
-        pedido.ExigirDevolucionPosible(); // ENTREGADO y no devuelto
+        pedido.ExigirDevolucionPosible(); //ENTREGADO y no devuelto
         return (int)Math.Floor((ahora.Date - pedido.FechaEntrega!.Value.Date).TotalDays);
     }
 
@@ -146,7 +146,8 @@ public abstract class ProcesarDevolucion
     }
 }
 
-/// <summary>DEFECTO: hasta 30 días desde la entrega; no exige que el producto esté sin uso.</summary>
+//DEFECTO: hasta 30 dias desde la entrega
+//no exige que el producto este sin uso
 public sealed class ProcesarDevolucionDefecto : ProcesarDevolucion
 {
     public ProcesarDevolucionDefecto(DependenciasDevolucion d) : base(d) { }
@@ -155,7 +156,7 @@ public sealed class ProcesarDevolucionDefecto : ProcesarDevolucion
     protected override string? InspeccionarCondicion(SolicitudDevolucion solicitud) => null;
 }
 
-/// <summary>ARREPENTIMIENTO: hasta 7 días y solo si el producto está sin uso.</summary>
+//ARREPENTIMIENTO: hasta 7 dias y solo si el producto esta sin uso
 public sealed class ProcesarDevolucionArrepentimiento : ProcesarDevolucion
 {
     public ProcesarDevolucionArrepentimiento(DependenciasDevolucion d) : base(d) { }
@@ -166,7 +167,7 @@ public sealed class ProcesarDevolucionArrepentimiento : ProcesarDevolucion
         solicitud.ProductoSinUso ? null : "Por arrepentimiento solo se aceptan productos sin uso.";
 }
 
-/// <summary>Punto de entrada protegido: elige la variante del Template Method según el motivo.</summary>
+//punto de entrada protegido: elige la variante del Template Method segun el motivo
 public sealed class ServicioDevoluciones : IServicioDevoluciones
 {
     private readonly IServicioAutorizacion _autorizacion;

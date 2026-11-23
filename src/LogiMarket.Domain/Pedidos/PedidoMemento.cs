@@ -3,10 +3,10 @@ using LogiMarket.Domain.Comun;
 
 namespace LogiMarket.Domain.Pedidos;
 
-/// <summary>
-/// Patrón Memento: instantánea COMPLETA e inmutable del borrador (cliente, entrega, líneas y sus
-/// componentes anidados). Solo el agregado Pedido conoce su contenido interno.
-/// </summary>
+//patron memento (comportamental)
+//clase PedidoMemento
+//objetivo: instantanea COMPLETA e inmutable del borrador (cliente, entrega, lineas y sus componentes anidados)
+//solo el agregado Pedido conoce su contenido interno
 public sealed class PedidoMemento
 {
     internal int ClienteId { get; }
@@ -17,7 +17,7 @@ public sealed class PedidoMemento
     internal TipoEntrega TipoEntrega { get; }
     internal IReadOnlyList<PedidoDetalle> Lineas { get; }
 
-    /// <summary>Descripción legible (no expone el estado interno modificable).</summary>
+    //descripcion legible (no expone el estado interno modificable)
     public string Descripcion { get; }
 
     internal PedidoMemento(int clienteId, string clienteNombre, string email, string telefono,
@@ -35,12 +35,11 @@ public sealed class PedidoMemento
     }
 }
 
-/// <summary>
-/// Caretaker del Memento: hasta 5 estados para deshacer y su pila de rehacer. Un estado puede ser
-/// <c>null</c> = carrito vacío (antes de la primera línea o tras quitar la última), de modo que deshacer
-/// también regresa al carrito vacío. Al confirmar el pedido el historial se bloquea y limpia (no se puede
-/// deshacer un cobro ni un descuento de stock).
-/// </summary>
+//caretaker del Memento: hasta 5 estados para deshacer y su pila de rehacer
+//un estado puede ser null = carrito vacio (antes de la primera linea o tras quitar la ultima)
+//de modo que deshacer tambien regresa al carrito vacio
+//al confirmar el pedido el historial se bloquea
+//limpia (no se puede deshacer un cobro ni un descuento de stock)
 public sealed class HistorialBorrador
 {
     public const int Capacidad = ParametrosNegocio.CapacidadHistorialBorrador;
@@ -53,10 +52,10 @@ public sealed class HistorialBorrador
     public bool PuedeDeshacer => !Bloqueado && _deshacer.Count > 0;
     public bool PuedeRehacer => !Bloqueado && _rehacer.Count > 0;
 
-    /// <summary>Guarda el estado actual ANTES de un cambio.</summary>
+    //guarda el estado actual ANTES de un cambio
     public void Capturar(Pedido pedido) => RegistrarAnterior(pedido.CrearMemento());
 
-    /// <summary>Registra un estado capturado previamente (null = carrito vacío).</summary>
+    //registra un estado capturado previamente (null = carrito vacio)
     public void RegistrarAnterior(PedidoMemento? memento)
     {
         ExigirDesbloqueado();
@@ -65,7 +64,7 @@ public sealed class HistorialBorrador
         _rehacer.Clear();
     }
 
-    /// <summary>Entrega el estado anterior y guarda el actual para rehacer.</summary>
+    //entrega el estado anterior y guarda el actual para rehacer
     public bool Deshacer(PedidoMemento? actual, out PedidoMemento? anterior)
     {
         anterior = null;
@@ -76,7 +75,7 @@ public sealed class HistorialBorrador
         return true;
     }
 
-    /// <summary>Entrega el estado siguiente y guarda el actual para deshacer.</summary>
+    //entrega el estado siguiente y guarda el actual para deshacer
     public bool Rehacer(PedidoMemento? actual, out PedidoMemento? siguiente)
     {
         siguiente = null;
@@ -87,10 +86,10 @@ public sealed class HistorialBorrador
         return true;
     }
 
-    /// <summary>Atajo cuando el pedido nunca pasa por el carrito vacío.</summary>
+    //atajo cuando el pedido nunca pasa por el carrito vacio
     public bool Deshacer(Pedido pedido) => Aplicar(pedido, Deshacer(pedido.CrearMemento(), out var m), m);
 
-    /// <summary>Atajo cuando el pedido nunca pasa por el carrito vacío.</summary>
+    //atajo cuando el pedido nunca pasa por el carrito vacio
     public bool Rehacer(Pedido pedido) => Aplicar(pedido, Rehacer(pedido.CrearMemento(), out var m), m);
 
     private static bool Aplicar(Pedido pedido, bool hubo, PedidoMemento? memento)

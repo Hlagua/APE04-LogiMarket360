@@ -7,7 +7,7 @@ using LogiMarket.Tests.Soporte;
 
 namespace LogiMarket.Tests.Dominio;
 
-/// <summary>Pruebas unitarias del dominio (sin base de datos).</summary>
+//pruebas unitarias del dominio (sin base de datos)
 public class PatronesDominioTests
 {
     [Fact(DisplayName = "P18 Composite: KIT_OFICINA = 50.00 y KIT_TELETRABAJO = 60.00 con expansión a SKU finales")]
@@ -26,11 +26,11 @@ public class PatronesDominioTests
         var arbol = CatalogoPrueba.Arbol();
         var oficina = (KitCompuesto)arbol.Obtener("KIT_OFICINA");
         var tele = arbol.Obtener("KIT_TELETRABAJO");
-        var ex = Assert.Throws<ExcepcionDominio>(() => oficina.Agregar(tele, 1)); // indirecto
+        var ex = Assert.Throws<ExcepcionDominio>(() => oficina.Agregar(tele, 1)); //indirecto
         Assert.Equal("KIT_CICLO", ex.Code());
-        Assert.Throws<ExcepcionDominio>(() => oficina.Agregar(oficina, 1));        // directo
+        Assert.Throws<ExcepcionDominio>(() => oficina.Agregar(oficina, 1)); //directo
 
-        // A nivel de entidades persistidas (detección en ArbolCatalogo).
+        //a nivel de entidades persistidas (deteccion en ArbolCatalogo)
         var a = Kit.Crear("KA", "A");
         var b = Kit.Crear("KB", "B");
         var p = Producto.Crear("PX", "X", "Cat", "", 1, 0, 1);
@@ -50,9 +50,9 @@ public class PatronesDominioTests
         var pasos = 0;
         while (it.MoverSiguiente() && ++pasos < 100) recorrido.Add($"{it.Actual.Sku}x{it.Actual.Cantidad}");
         Assert.Equal(new[] { "P01x1", "P02x1", "P03x1" }, recorrido);
-        Assert.False(it.MoverSiguiente()); // terminó
+        Assert.False(it.MoverSiguiente()); //termino
 
-        // Las cantidades se propagan por nivel.
+        //las cantidades se propagan por nivel
         Assert.Equal(new[] { 2, 2, 2 }, kit.ComponentesFisicos().Select(c => c.Cantidad));
     }
 
@@ -65,7 +65,7 @@ public class PatronesDominioTests
         tele.Aceptar(desglose);
         tele.Aceptar(peso);
         Assert.Equal(new[] { "P01", "P02", "P03" }, desglose.Lineas.Select(l => l.Sku));
-        Assert.Equal(new[] { 2, 2, 1 }, desglose.Lineas.Select(l => l.Nivel)); // P01/P02 dentro de KIT_OFICINA
+        Assert.Equal(new[] { 2, 2, 1 }, desglose.Lineas.Select(l => l.Nivel)); //P01/P02 dentro de KIT_OFICINA
         Assert.Equal(1.00m, peso.PesoTotalKg);
         Assert.Equal(2, peso.KitsAtravesados);
     }
@@ -77,7 +77,7 @@ public class PatronesDominioTests
         Assert.Equal(6.00m, calc.Calcular(new ContextoDescuento(CategoriaCliente.VIP, 3, 60m)).Monto);
         Assert.Equal(15.00m, calc.Calcular(new ContextoDescuento(CategoriaCliente.MAYORISTA, 10, 100m)).Monto);
         Assert.Equal(0.00m, calc.Calcular(new ContextoDescuento(CategoriaCliente.NORMAL, 4, 90m)).Monto);
-        // VIP con 10 unidades: prioridad MAYORISTA 15 % (no 25 %).
+        //VIP con 10 unidades: prioridad MAYORISTA 15 % (no 25 %)
         var vipMayorista = calc.Calcular(new ContextoDescuento(CategoriaCliente.VIP, 10, 100m));
         Assert.Equal(("MAYORISTA", 15.00m), (vipMayorista.Politica, vipMayorista.Monto));
     }
@@ -175,7 +175,7 @@ public class PatronesDominioTests
         p.RegistrarPago("K", DateTime.Now, "t");
         h.Bloquear();
         Assert.False(h.Deshacer(p));
-        Assert.Throws<ExcepcionDominio>(() => p.Restaurar(p.CrearMemento())); // no se deshace un pago
+        Assert.Throws<ExcepcionDominio>(() => p.Restaurar(p.CrearMemento())); //no se deshace un pago
     }
 
     [Fact(DisplayName = "Memento: capacidad máxima de cinco estados")]
@@ -196,7 +196,7 @@ public class PatronesDominioTests
         Assert.Throws<ExcepcionDominio>(() => Producto.Crear("X1", "X", "C", "", 1, 0, -1));
         var p = Producto.Crear("x1", "X", "C", "", 1.005m, 0, 2);
         Assert.Equal("X1", p.Sku);
-        Assert.Equal(1.01m, p.Precio); // AwayFromZero
+        Assert.Equal(1.01m, p.Precio); //AwayFromZero
         Assert.Throws<ExcepcionDominio>(() => p.DescontarStock(3));
         Assert.Equal(2, p.Stock);
     }

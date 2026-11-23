@@ -6,11 +6,11 @@ using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.Application.Pedidos;
 
-/// <summary>
-/// Sesión de edición del carrito/borrador en memoria. Usa Builder para crear el agregado y el Memento
-/// (<see cref="HistorialBorrador"/>) para deshacer/rehacer hasta 5 estados completos, INCLUIDO el carrito
-/// vacío: la primera línea y el vaciado también se pueden deshacer. Solo se registran cambios exitosos.
-/// </summary>
+//sesion de edicion del carrito/borrador en memoria
+//usa Builder para crear el agregado
+//usa el Memento (HistorialBorrador) para deshacer/rehacer hasta 5 estados completos
+//INCLUIDO el carrito vacio: la primera linea y el vaciado tambien se pueden deshacer
+//solo se registran cambios exitosos
 public sealed class EditorBorrador
 {
     private sealed record ClienteBorrador(int Id, string Nombre, string Email, string Telefono, CategoriaCliente Categoria);
@@ -19,10 +19,9 @@ public sealed class EditorBorrador
     private ClienteBorrador? _cliente;
     private TipoEntrega _entrega = TipoEntrega.ESTANDAR;
 
-    /// <summary>
-    /// Agregado retenido cuando el carrito queda vacío. Si se deshace el vaciado se reutiliza el mismo
-    /// objeto, de modo que un borrador ya guardado conserva su identificador.
-    /// </summary>
+    //agregado retenido cuando el carrito queda vacio
+    //si se deshace el vaciado se reutiliza el mismo objeto
+    //de modo que un borrador ya guardado conserva su identificador
     private Pedido? _retenido;
 
     public EditorBorrador(IServicioValoracion valoracion, Pedido? existente = null)
@@ -48,7 +47,7 @@ public sealed class EditorBorrador
         Aplicar(p => p.CambiarCliente(cliente));
     }
 
-    /// <summary>Selecciona el cliente a partir del DTO del lado de lectura.</summary>
+    //selecciona el cliente a partir del DTO del lado de lectura
     public void SeleccionarCliente(Consultas.ClienteDto cliente)
     {
         if (!cliente.Activo)
@@ -74,7 +73,7 @@ public sealed class EditorBorrador
 
         if (_retenido is not null)
         {
-            // Carrito vaciado de un borrador existente: se reutiliza el agregado (conserva su id).
+            //carrito vaciado de un borrador existente: se reutiliza el agregado (conserva su id)
             var vacio = _retenido;
             CambiarAEstado(null, () =>
             {
@@ -88,12 +87,12 @@ public sealed class EditorBorrador
             return;
         }
 
-        // Builder: impide crear un agregado sin cliente o sin líneas.
+        //builder: impide crear un agregado sin cliente o sin lineas
         var builder = new PedidoBuilder().ConEntrega(_entrega).Agregar(elemento, cantidad);
         if (_cliente is not null)
             builder.ParaCliente(_cliente.Id, _cliente.Nombre, _cliente.Categoria, _cliente.Email, _cliente.Telefono);
         var nuevo = builder.Construir();
-        Historial.RegistrarAnterior(null); // el carrito vacío es un estado al que se puede volver
+        Historial.RegistrarAnterior(null); //el carrito vacio es un estado al que se puede volver
         Pedido = nuevo;
         RecordarDatos(nuevo);
         TieneCambiosSinGuardar = true;
@@ -101,7 +100,8 @@ public sealed class EditorBorrador
 
     public void CambiarCantidad(string codigo, int cantidad) => Aplicar(p => p.CambiarCantidad(codigo, cantidad));
 
-    /// <summary>Quita una línea; si es la última, el carrito queda vacío (y se puede deshacer).</summary>
+    //quita una linea
+    //si es la ultima, el carrito queda vacio (y se puede deshacer)
     public void Quitar(string codigo)
     {
         if (Pedido is null) throw new ExcepcionAplicacion("BORRADOR_VACIO", "El carrito ya está vacío.");
@@ -115,7 +115,8 @@ public sealed class EditorBorrador
         Vaciar();
     }
 
-    /// <summary>Vacía el carrito conservando cliente y forma de entrega; se puede deshacer.</summary>
+    //vacia el carrito conservando cliente y forma de entrega
+    //se puede deshacer
     public void Vaciar()
     {
         if (Pedido is null) return;
@@ -144,16 +145,16 @@ public sealed class EditorBorrador
 
     public void MarcarGuardado() => TieneCambiosSinGuardar = false;
 
-    /// <summary>Al confirmar el pedido se bloquea el historial: no se puede deshacer un cobro ni el stock.</summary>
+    //al confirmar el pedido se bloquea el historial: no se puede deshacer un cobro ni el stock
     public void BloquearPorConfirmacion() => Historial.Bloquear();
 
-    // ---------------- Internos ----------------
+    //internos
 
     private void Aplicar(Action<Pedido> cambio)
     {
         if (Pedido is null) throw new ExcepcionAplicacion("BORRADOR_VACIO", "Agregue primero un producto o kit.");
         var anterior = Pedido.CrearMemento();
-        cambio(Pedido);                       // si lanza, no se registra el estado
+        cambio(Pedido); //si lanza, no se registra el estado
         Historial.RegistrarAnterior(anterior);
         RecordarDatos(Pedido);
         TieneCambiosSinGuardar = true;
@@ -166,7 +167,7 @@ public sealed class EditorBorrador
         TieneCambiosSinGuardar = true;
     }
 
-    /// <summary>Restaura un estado del historial: null = carrito vacío.</summary>
+    //restaura un estado del historial: null = carrito vacio
     private void AplicarEstado(PedidoMemento? estado)
     {
         if (estado is null)
@@ -198,7 +199,7 @@ public sealed class EditorBorrador
 
     private static void ReemplazarLineas(Pedido pedido, IElementoCatalogo elemento, int cantidad)
     {
-        // Se agrega la nueva línea y luego se quitan las anteriores (nunca queda sin líneas).
+        //se agrega la nueva linea y luego se quitan las anteriores (nunca queda sin lineas)
         var anteriores = pedido.Lineas.Select(l => l.Codigo).Where(c => !string.Equals(c, elemento.Codigo, StringComparison.OrdinalIgnoreCase)).ToList();
         var existia = pedido.Lineas.Any(l => string.Equals(l.Codigo, elemento.Codigo, StringComparison.OrdinalIgnoreCase));
         if (existia) pedido.CambiarCantidad(elemento.Codigo, cantidad);

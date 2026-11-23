@@ -5,15 +5,16 @@ using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.Application.Notificaciones;
 
-/// <summary>
-/// Patrón Factory Method (creador abstracto). <see cref="NotificarAsync"/> es la operación estable que
-/// usa el producto; cada creador concreto decide QUÉ notificador crear en <see cref="CrearNotificador"/>.
-/// </summary>
+//patron factory method (creacional)
+//clase CreadorNotificador
+//rol: creador abstracto
+//objetivo: NotificarAsync es la operacion estable que usa el producto
+//cada creador concreto decide QUE notificador crear en CrearNotificador
 public abstract class CreadorNotificador
 {
     public abstract string Canal { get; }
 
-    /// <summary>Método de fábrica.</summary>
+    //metodo de fabrica
     protected abstract INotificador CrearNotificador();
 
     protected abstract string ObtenerDestinatario(EventoNegocio evento);
@@ -27,10 +28,8 @@ public abstract class CreadorNotificador
     }
 }
 
-/// <summary>
-/// Elige el creador según la configuración (fuera de los formularios). La UI nunca instancia
-/// notificadores concretos.
-/// </summary>
+//elige el creador segun la configuracion (fuera de los formularios)
+//la UI nunca instancia notificadores concretos
 public sealed class SelectorCanalNotificacion : ISelectorCanalNotificacion
 {
     private readonly IReadOnlyDictionary<string, CreadorNotificador> _creadores;

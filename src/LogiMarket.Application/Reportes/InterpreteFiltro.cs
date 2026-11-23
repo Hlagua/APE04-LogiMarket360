@@ -5,18 +5,18 @@ using LogiMarket.Domain.Pedidos;
 
 namespace LogiMarket.Application.Reportes;
 
-/// <summary>
-/// Patrón Interpreter para filtros de pedidos. Gramática (AND tiene mayor precedencia que OR):
-/// <code>
-///   expresion   := termino ( "OR" termino )*
-///   termino     := factor ( "AND" factor )*
-///   factor      := "(" expresion ")" | comparacion
-///   comparacion := "ESTADO" ("=" | "!=") VALOR
-///                | "TOTAL" ("=" | "!=" | "&gt;=" | "&lt;=" | "&gt;" | "&lt;") NUMERO
-///                | "CLIENTE" ("=" | "!=") TEXTO        (TEXTO puede ir entre comillas simples)
-/// </code>
-/// El árbol se evalúa en memoria sobre DTO: nunca se concatena SQL.
-/// </summary>
+//patron interpreter (comportamental)
+//interfaz IExpresionFiltro
+//objetivo: filtrar pedidos con una gramatica pequeña
+//el texto se convierte en un arbol de expresiones y se evalua en memoria sobre los DTO
+//nunca se concatena SQL
+//gramatica (AND tiene mayor precedencia que OR):
+//  expresion := termino ( "OR" termino )*
+//  termino := factor ( "AND" factor )*
+//  factor := "(" expresion ")" | comparacion
+//  comparacion := "ESTADO" ("=" | "!=") VALOR
+//  | "TOTAL" ("=" | "!=" | ">=" | "<=" | ">" | "<") NUMERO
+//  | "CLIENTE" ("=" | "!=") TEXTO (TEXTO puede ir entre comillas simples)
 public interface IExpresionFiltro
 {
     bool Interpretar(PedidoResumenDto pedido);
@@ -31,7 +31,7 @@ public sealed class ExcepcionSintaxisFiltro : Exception
         Posicion = posicion;
 }
 
-// ---------------- Expresiones terminales ----------------
+//expresiones terminales
 
 public sealed class ExpresionEstado : IExpresionFiltro
 {
@@ -73,10 +73,9 @@ public sealed class ExpresionTotal : IExpresionFiltro
     public string Describir() => $"TOTAL {_operador} {_valor.ToString("0.00", CultureInfo.InvariantCulture)}";
 }
 
-/// <summary>
-/// CLIENTE = texto: IGUALDAD del nombre completo (como indica la gramática de la guía), sin distinguir
-/// mayúsculas ni espacios en los extremos. "CLIENTE = a" no selecciona a "Ana".
-/// </summary>
+//CLIENTE = texto: IGUALDAD del nombre completo (como indica la gramatica de la guia)
+//sin distinguir mayusculas ni espacios en los extremos
+//"CLIENTE = a" no selecciona a "Ana"
 public sealed class ExpresionCliente : IExpresionFiltro
 {
     private readonly bool _igual;
@@ -93,7 +92,7 @@ public sealed class ExpresionCliente : IExpresionFiltro
     public string Describir() => $"CLIENTE {(_igual ? "=" : "!=")} '{_texto}'";
 }
 
-// ---------------- Expresiones no terminales ----------------
+//expresiones no terminales
 
 public sealed class ExpresionY : IExpresionFiltro
 {
@@ -111,7 +110,7 @@ public sealed class ExpresionO : IExpresionFiltro
     public string Describir() => $"({_izq.Describir()} OR {_der.Describir()})";
 }
 
-// ---------------- Analizador léxico y sintáctico ----------------
+//analizador lexico y sintactico
 
 internal enum TipoToken { Campo, Operador, Numero, Texto, Y, O, AbreParentesis, CierraParentesis, Fin }
 
@@ -172,12 +171,13 @@ internal static class AnalizadorLexico
         return tokens;
     }
 
-    // Un nombre de campo solo es campo al inicio o tras AND/OR/(; así "CLIENTE = Total" sigue siendo texto.
+    //un nombre de campo solo es campo al inicio o tras AND/OR/(
+    //asi "CLIENTE = Total" sigue siendo texto
     private static bool EsCampoEsperado(List<Token> previos) =>
         previos.Count == 0 || previos[^1].Tipo is TipoToken.Y or TipoToken.O or TipoToken.AbreParentesis;
 }
 
-/// <summary>Analizador sintáctico descendente recursivo que construye el árbol de expresiones.</summary>
+//analizador sintactico descendente recursivo que construye el arbol de expresiones
 public static class AnalizadorFiltro
 {
     public static IExpresionFiltro Analizar(string texto)

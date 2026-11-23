@@ -9,7 +9,8 @@ namespace LogiMarket.Application.Clientes;
 
 public sealed record ClienteEdicion(int Id, string Identificacion, string Nombre, string Email, string Telefono, CategoriaCliente Categoria);
 
-/// <summary>Comandos de clientes. Las consultas están en ServicioConsultas.</summary>
+//comandos de clientes
+//las consultas estan en ServicioConsultas
 public sealed class ServicioClientes : IServicioClientes
 {
     private readonly IClienteRepositorio _clientes;

@@ -2,10 +2,9 @@ using LogiMarket.Application.Comun;
 
 namespace LogiMarket.Infrastructure.Registro;
 
-/// <summary>
-/// Bitácora técnica en memoria + archivo de texto (logs/bitacora-AAAAMMDD.log). Independiente de las
-/// transacciones de base de datos. Segura para hilos.
-/// </summary>
+//bitacora tecnica en memoria + archivo de texto (logs/bitacora-AAAAMMDD.log)
+//independiente de las transacciones de base de datos
+//segura para hilos
 public sealed class BitacoraArchivo : IBitacoraTecnica
 {
     private readonly List<EntradaBitacora> _entradas = new();
@@ -31,7 +30,8 @@ public sealed class BitacoraArchivo : IBitacoraTecnica
             }
             catch (IOException)
             {
-                // El log en archivo es complementario; la entrada sigue disponible en memoria.
+                //el log en archivo es complementario
+                //la entrada sigue disponible en memoria
             }
         }
     }

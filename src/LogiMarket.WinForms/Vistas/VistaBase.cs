@@ -3,8 +3,8 @@ using LogiMarket.WinForms.Infraestructura;
 
 namespace LogiMarket.WinForms.Vistas;
 
-/// <summary>Base de las pantallas (colegas del Mediator). Habilitar botones por rol es solo ayuda visual:
-/// la autorización real la aplica Application.</summary>
+//base de las pantallas (colegas del Mediator)
+//habilitar botones por rol es solo ayuda visual: la autorizacion real la aplica Application
 public abstract class VistaBase : UserControl, IVistaColega
 {
     protected readonly Ejecutor Ejecutor;
@@ -31,10 +31,8 @@ public abstract class VistaBase : UserControl, IVistaColega
 
     protected bool Puede(Operacion operacion) => Ejecutor.Singleton<IPoliticaPermisos>().Permite(Usuario?.Rol, operacion);
 
-    /// <summary>
-    /// Suscribe la vista a las métricas (Singleton) y se desuscribe al destruirse, para que una vista de
-    /// una sesión cerrada no quede retenida ni intente actualizar controles eliminados.
-    /// </summary>
+    //suscribe la vista a las metricas (Singleton) y se desuscribe al destruirse
+    //para que una vista de una sesion cerrada no quede retenida ni intente actualizar controles eliminados
     protected void AlCambiarMetricas(Action<Application.Metricas.InstantaneaMetricas> accion)
     {
         var metricas = Ejecutor.Singleton<Application.Metricas.IMetricasSesion>();
@@ -50,7 +48,7 @@ public abstract class VistaBase : UserControl, IVistaColega
 
     protected Task NotificarAsync(EventoVista evento, int pedidoId = 0) => Mediador.NotificarAsync(this, evento, pedidoId);
 
-    /// <summary>Validación cercana al campo: marca el control y devuelve false si la condición falla.</summary>
+    //validacion cercana al campo: marca el control y devuelve false si la condicion falla
     protected bool Validar(Control control, bool condicion, string mensaje)
     {
         Errores.SetError(control, condicion ? "" : mensaje);

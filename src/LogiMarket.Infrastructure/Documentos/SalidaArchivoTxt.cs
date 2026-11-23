@@ -3,7 +3,7 @@ using LogiMarket.Application.Puertos;
 
 namespace LogiMarket.Infrastructure.Documentos;
 
-/// <summary>Implementador concreto del Bridge: escribe el comprobante en un archivo .txt real.</summary>
+//implementador concreto del Bridge: escribe el comprobante en un archivo .txt real
 public sealed class SalidaArchivoTxt : ISalidaDocumento
 {
     public const string NombreMedio = "ArchivoTXT";

@@ -6,11 +6,9 @@ using LogiMarket.Application.Seguridad;
 
 namespace LogiMarket.Application.Administracion;
 
-/// <summary>
-/// Comandos de la pantalla de demostración (solo ADMIN): proveedor y canal simulados, fallos inducidos,
-/// procesamiento manual del Outbox y restablecimiento de la base de pruebas. Las consultas operativas
-/// (inventario, auditoría, bitácora, métricas) están en ServicioConsultas.
-/// </summary>
+//comandos de la pantalla de demostracion (solo ADMIN): proveedor y canal simulados, fallos inducidos
+//procesamiento manual del Outbox y restablecimiento de la base de pruebas
+//las consultas operativas (inventario, auditoria, bitacora, metricas) estan en ServicioConsultas
 public sealed class ServicioAdministracion : IServicioAdministracion
 {
     private static readonly string[] Proveedores = { ConfiguracionDemo.ProveedorLegado, ConfiguracionDemo.ProveedorModerno };
@@ -43,10 +41,8 @@ public sealed class ServicioAdministracion : IServicioAdministracion
         }
     }
 
-    /// <summary>
-    /// Aplica el cambio sobre una copia y la valida antes de publicarla: un proveedor o canal desconocido se
-    /// rechaza en lugar de reemplazarse en silencio por un valor por defecto.
-    /// </summary>
+    //aplica el cambio sobre una copia y la valida antes de publicarla:
+    //un proveedor o canal desconocido se rechaza en lugar de reemplazarse en silencio por un valor por defecto
     public void AplicarDemo(Action<ConfiguracionDemo> cambio)
     {
         _autorizacion.Exigir(Operacion.AdministrarDemo);
@@ -78,7 +74,8 @@ public sealed class ServicioAdministracion : IServicioAdministracion
         return await _procesadorOutbox.ProcesarPendientesAsync(50, ct);
     }
 
-    /// <summary>Restablece la base de PRUEBAS (borra, migra y siembra). Solo ADMIN y con confirmación en la UI.</summary>
+    //restablece la base de PRUEBAS (borra, migra y siembra)
+    //solo ADMIN y con confirmacion en la UI
     public async Task RestablecerBaseAsync(CancellationToken ct = default)
     {
         _autorizacion.Exigir(Operacion.AdministrarDemo);

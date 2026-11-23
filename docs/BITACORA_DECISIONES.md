@@ -13,6 +13,17 @@ Sirve de fuente para el informe final (que se elaborará cuando se apruebe el si
 - Git: un commit por iteración, solo a nombre del usuario.
 - Pendiente: recorrido manual de la interfaz por el usuario e informe PDF (al final).
 
+## 2026-11-23 — Estilo de comentarios
+
+Se cambió la forma de comentar todo el código (src y tests) al estilo de los proyectos propios de Unidad 2:
+
+- Solo comentarios de línea `//`, sin documentación XML `///`.
+- Pegados al `//`, en minúscula, sin tildes ni punto final; una idea corta por línea.
+- Encabezado de cada patrón: `//patron x (familia)`, `//clase Nombre`, `//objetivo: ...`.
+- Pasos numerados como `//paso 1: ...`; flechas `->` en lugar de símbolos especiales.
+
+Motivo: los docentes penalizaron textos con aspecto de IA. Solo cambian comentarios: compila igual y las 59 pruebas pasan.
+
 ## 2026-11-22 — Segunda revisión y fallas recurrentes de entregas anteriores
 
 ### Decisiones confirmadas con la guía (no se cambian)

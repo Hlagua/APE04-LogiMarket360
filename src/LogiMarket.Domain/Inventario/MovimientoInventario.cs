@@ -8,7 +8,7 @@ public enum MotivoMovimiento
     AJUSTE
 }
 
-/// <summary>Kardex: movimiento positivo (entrada) o negativo (salida) con motivo y referencia.</summary>
+//kardex: movimiento positivo (entrada) o negativo (salida) con motivo y referencia
 public class MovimientoInventario
 {
     public int Id { get; private set; }

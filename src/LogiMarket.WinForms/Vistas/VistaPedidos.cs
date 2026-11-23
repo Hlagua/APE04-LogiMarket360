@@ -9,7 +9,8 @@ using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.WinForms.Vistas;
 
-/// <summary>06. Pedidos e historial: estados, trazabilidad, clonación (Prototype) y diagnóstico (Chain).</summary>
+//06
+//pedidos e historial: estados, trazabilidad, clonacion (Prototype) y diagnostico (Chain)
 public sealed class VistaPedidos : VistaBase
 {
     private readonly ComboBox _estado = Ui.Combo(130);

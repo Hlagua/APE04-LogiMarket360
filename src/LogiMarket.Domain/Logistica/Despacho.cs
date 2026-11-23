@@ -2,7 +2,8 @@ using LogiMarket.Domain.Comun;
 
 namespace LogiMarket.Domain.Logistica;
 
-/// <summary>Despacho con guía simulada; uno por pedido.</summary>
+//despacho con guia simulada
+//uno por pedido
 public class Despacho
 {
     public int Id { get; private set; }

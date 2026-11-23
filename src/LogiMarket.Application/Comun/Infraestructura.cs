@@ -1,6 +1,6 @@
 namespace LogiMarket.Application.Comun;
 
-/// <summary>Reloj inyectable (permite simular días transcurridos en pruebas de devolución).</summary>
+//reloj inyectable (permite simular dias transcurridos en pruebas de devolucion)
 public interface IReloj
 {
     DateTime Ahora { get; }
@@ -16,17 +16,16 @@ public sealed record EntradaBitacora(DateTime Fecha, string Categoria, string Me
     public override string ToString() => $"{Fecha:yyyy-MM-dd HH:mm:ss.fff} [{Categoria}] ({Correlacion}) {Mensaje}";
 }
 
-/// <summary>
-/// Bitácora técnica (LOG). Es independiente de la transacción de BD: lo registrado aquí sobrevive a un
-/// rollback (necesario para observar INICIO → PASARELA → FIN/ERROR y denegaciones de seguridad).
-/// </summary>
+//bitacora tecnica (LOG)
+//es independiente de la transaccion de BD: lo registrado aqui sobrevive a un rollback (necesario para
+//observar INICIO -> PASARELA -> FIN/ERROR y denegaciones de seguridad)
 public interface IBitacoraTecnica
 {
     void Registrar(string categoria, string mensaje);
     IReadOnlyList<EntradaBitacora> Entradas(string? categoria = null);
 }
 
-/// <summary>Identificador de correlación que fluye por llamadas asíncronas (Decorator → Adapter).</summary>
+//identificador de correlacion que fluye por llamadas asincronas (Decorator -> Adapter)
 public static class ContextoCorrelacion
 {
     private static readonly AsyncLocal<string?> Valor = new();
@@ -46,11 +45,10 @@ public static class ContextoCorrelacion
     }
 }
 
-/// <summary>
-/// Opciones de la pantalla de DEMOSTRACIÓN (solo ADMIN). Permiten cambiar el proveedor simulado,
-/// inducir fallos y alternar el canal de aviso. Todo cambio queda en la bitácora; por defecto están
-/// desactivadas y no alteran las reglas de negocio ni los resultados reales.
-/// </summary>
+//opciones de la pantalla de DEMOSTRACION (solo ADMIN)
+//permiten cambiar el proveedor simulado, inducir fallos y alternar el canal de aviso
+//todo cambio queda en la bitacora
+//por defecto estan desactivadas y no alteran las reglas de negocio ni los resultados reales
 public sealed class ConfiguracionDemo
 {
     public const string ProveedorLegado = "LEGADO";

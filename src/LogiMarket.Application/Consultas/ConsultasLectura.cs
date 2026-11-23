@@ -1,6 +1,6 @@
 namespace LogiMarket.Application.Consultas;
 
-// Lado de CONSULTA (CQRS básico): DTO de solo lectura obtenidos sin rastreo de cambios.
+//lado de CONSULTA (CQRS basico): DTO de solo lectura obtenidos sin rastreo de cambios
 
 public sealed record ProductoDto(int Id, string Sku, string Nombre, string Categoria, string Descripcion,
     decimal Precio, decimal PesoKg, int Stock, bool Activo);
@@ -41,13 +41,12 @@ public sealed record IndicadoresDto(int Borradores, int Validados, int Pagados, 
     int Cancelados, int Devueltos, decimal VentasCobradas, decimal Reembolsado, int ProductosStockBajo,
     int OutboxPendientes, IReadOnlyList<string> Alertas);
 
-/// <summary>Catálogo completo para armar el Composite en el lado de lectura (entidades sin seguimiento).</summary>
+//catalogo completo para armar el Composite en el lado de lectura (entidades sin seguimiento)
 public sealed record CatalogoLectura(IReadOnlyList<Domain.Catalogo.Producto> Productos, IReadOnlyList<Domain.Catalogo.Kit> Kits);
 
-/// <summary>
-/// Puerto del LADO DE LECTURA (CQRS básico), implementado con EF Core AsNoTracking en Infrastructure.
-/// Nunca modifica datos. El lado de escritura usa los repositorios por agregado de Puertos/Repositorios.cs.
-/// </summary>
+//puerto del LADO DE LECTURA (CQRS basico), implementado con EF Core AsNoTracking en Infrastructure
+//nunca modifica datos
+//el lado de escritura usa los repositorios por agregado de Puertos/Repositorios.cs
 public interface IConsultasLectura
 {
     Task<CatalogoLectura> CatalogoAsync(CancellationToken ct = default);

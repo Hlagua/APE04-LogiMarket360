@@ -2,10 +2,9 @@ using LogiMarket.Domain.Comun;
 
 namespace LogiMarket.Domain.Catalogo;
 
-/// <summary>
-/// Composite: kit que agrupa productos u otros kits. No expone su colección interna mutable;
-/// el recorrido se hace con <see cref="IIteradorComponentes"/> o con un visitante.
-/// </summary>
+//composite: kit que agrupa productos u otros kits
+//no expone su coleccion interna mutable
+//el recorrido se hace con IIteradorComponentes o con un visitante
 public sealed class KitCompuesto : IElementoCatalogo
 {
     private readonly List<(IElementoCatalogo Elemento, int Cantidad)> _hijos = new();
@@ -26,7 +25,7 @@ public sealed class KitCompuesto : IElementoCatalogo
 
     public int CantidadHijos => _hijos.Count;
 
-    /// <summary>Agrega un hijo rechazando referencias circulares directas o indirectas.</summary>
+    //agrega un hijo rechazando referencias circulares directas o indirectas
     public KitCompuesto Agregar(IElementoCatalogo elemento, int cantidad)
     {
         ArgumentNullException.ThrowIfNull(elemento);
@@ -42,7 +41,7 @@ public sealed class KitCompuesto : IElementoCatalogo
         string.Equals(Codigo, codigo, StringComparison.OrdinalIgnoreCase) ||
         _hijos.Any(h => h.Elemento.Contiene(codigo));
 
-    /// <summary>Hijos directos en una copia de solo lectura (para iteradores y visitantes).</summary>
+    //hijos directos en una copia de solo lectura (para iteradores y visitantes)
     public IReadOnlyList<(IElementoCatalogo Elemento, int Cantidad)> Hijos => _hijos.ToArray();
 
     public void Aceptar(IVisitanteCatalogo visitante, int multiplicador = 1)
@@ -58,7 +57,7 @@ public sealed class KitCompuesto : IElementoCatalogo
 
 public static class ElementoCatalogoExtensiones
 {
-    /// <summary>Expansión a SKU finales: SKU → cantidad por unidad del elemento (usa el Iterator).</summary>
+    //expansion a SKU finales: SKU -> cantidad por unidad del elemento (usa el Iterator)
     public static IReadOnlyDictionary<string, int> ExpandirSkus(this IElementoCatalogo elemento)
     {
         var resultado = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);

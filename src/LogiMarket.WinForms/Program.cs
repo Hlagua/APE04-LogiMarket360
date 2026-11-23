@@ -7,10 +7,10 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace LogiMarket.WinForms;
 
-/// <summary>
-/// COMPOSITION ROOT. Único lugar donde WinForms toca Infrastructure: registrar dependencias y preparar la
-/// base (migraciones + semilla idempotente). No contiene lógica de negocio.
-/// </summary>
+//COMPOSITION ROOT
+//unico lugar donde WinForms toca Infrastructure:
+//registrar dependencias y preparar la base (migraciones + semilla idempotente)
+//no contiene logica de negocio
 internal static class Program
 {
     [STAThread]
@@ -32,7 +32,7 @@ internal static class Program
 
         var servicios = new ServiceCollection();
         servicios.AgregarLogiMarket(opciones);
-        servicios.AddSingleton<Application.Puertos.ISalidaDocumento, SalidaVistaPrevia>(); // Bridge: medio visual
+        servicios.AddSingleton<Application.Puertos.ISalidaDocumento, SalidaVistaPrevia>(); //bridge: medio visual
         servicios.AddSingleton<Ejecutor>();
         using var proveedor = servicios.BuildServiceProvider();
 
@@ -53,7 +53,7 @@ internal static class Program
             using var login = new FormLogin(ejecutor, opciones.RutaBaseDatos);
             if (login.ShowDialog() != DialogResult.OK || login.Usuario is null) return;
 
-            // Mediador nuevo por sesión para no conservar vistas de la sesión anterior.
+            //mediador nuevo por sesion para no conservar vistas de la sesion anterior
             var mediador = new FormularioPrincipalMediator();
             using var principal = new FormPrincipal(ejecutor, mediador, login.Usuario);
             System.Windows.Forms.Application.Run(principal);
@@ -61,10 +61,9 @@ internal static class Program
         }
     }
 
-    /// <summary>
-    /// Rutas de base, salidas y logs. Prioridad: variable LOGIMARKET_DB (solo la base) → appsettings.json
-    /// junto al ejecutable (ver appsettings.ejemplo.json) → valores por defecto.
-    /// </summary>
+    //rutas de base, salidas y logs
+    //prioridad: variable LOGIMARKET_DB (solo la base) ->
+    //appsettings.json junto al ejecutable (ver appsettings.ejemplo.json) -> valores por defecto
     private static OpcionesLogiMarket LeerConfiguracion()
     {
         var baseDir = AppContext.BaseDirectory;
@@ -89,7 +88,7 @@ internal static class Program
 
     private sealed record ConfiguracionArchivo(string? RutaBaseDatos, string? CarpetaSalidas, string? CarpetaLogs);
 
-    /// <summary>Español (Ecuador) con punto decimal para que los importes coincidan con la guía.</summary>
+    //español (Ecuador) con punto decimal para que los importes coincidan con la guia
     private static void ConfigurarCultura()
     {
         var cultura = (CultureInfo)CultureInfo.GetCultureInfo("es-EC").Clone();

@@ -4,10 +4,10 @@ using LogiMarket.Domain.Comun;
 
 namespace LogiMarket.Domain.Pedidos;
 
-/// <summary>
-/// Patrón Builder: ensambla paso a paso cliente, líneas simples y kits (con su instantánea) y forma de
-/// entrega. <see cref="Construir"/> solo entrega un agregado VÁLIDO: sin cliente o sin líneas falla.
-/// </summary>
+//patron builder (creacional)
+//clase PedidoBuilder
+//objetivo: ensambla paso a paso cliente, lineas simples y kits (con su instantanea) y forma de entrega
+//construir solo entrega un agregado VALIDO: sin cliente o sin lineas falla
 public sealed class PedidoBuilder
 {
     private (int Id, string Nombre, string Email, string Telefono, CategoriaCliente Categoria)? _cliente;
@@ -63,7 +63,7 @@ public sealed class PedidoBuilder
         if (_elementos.Count == 0)
             throw new ExcepcionDominio("PEDIDO_SIN_LINEAS", "No se puede construir un pedido sin líneas.");
 
-        // Se agrupan elementos repetidos para que cada código sea una sola línea.
+        //se agrupan elementos repetidos para que cada codigo sea una sola linea
         var lineas = _elementos
             .GroupBy(e => e.Elemento.Codigo, StringComparer.OrdinalIgnoreCase)
             .Select(g => PedidoDetalle.DesdeElemento(g.First().Elemento, g.Sum(x => x.Cantidad)))

@@ -1,6 +1,6 @@
 namespace LogiMarket.WinForms.Infraestructura;
 
-/// <summary>Sucesos de la interfaz que el mediador sabe coordinar.</summary>
+//sucesos de la interfaz que el mediador sabe coordinar
 public enum EventoVista
 {
     SesionIniciada,
@@ -19,7 +19,7 @@ public enum EventoVista
     BaseRestablecida
 }
 
-/// <summary>Colega del Mediator: una vista que puede refrescarse o recibir un pedido seleccionado.</summary>
+//colega del Mediator: una vista que puede refrescarse o recibir un pedido seleccionado
 public interface IVistaColega
 {
     string Clave { get; }
@@ -34,10 +34,11 @@ public interface IMediadorVistas
     Task NotificarAsync(IVistaColega? emisor, EventoVista evento, int pedidoId = 0);
 }
 
-/// <summary>
-/// Patrón Mediator: FormularioPrincipalMediator coordina catálogo, carrito, pedidos, inventario y
-/// métricas. Ninguna vista llama métodos de otra; solo notifican sucesos aquí.
-/// </summary>
+//patron mediator (comportamental)
+//clase FormularioPrincipalMediator
+//objetivo: FormularioPrincipalMediator coordina catalogo, carrito, pedidos, inventario y metricas
+//ninguna vista llama metodos de otra
+//solo notifican sucesos aqui
 public sealed class FormularioPrincipalMediator : IMediadorVistas
 {
     public const string Panel = "panel", Catalogo = "catalogo", Clientes = "clientes", Carrito = "carrito",
@@ -47,7 +48,7 @@ public sealed class FormularioPrincipalMediator : IMediadorVistas
     private readonly Dictionary<string, IVistaColega> _vistas = new();
     private readonly List<string> _trazas = new();
 
-    /// <summary>Lo asigna el formulario principal para poder cambiar de pestaña.</summary>
+    //lo asigna el formulario principal para poder cambiar de pestaña
     public Action<string>? MostrarVista { get; set; }
 
     public IReadOnlyList<string> Trazas => _trazas;

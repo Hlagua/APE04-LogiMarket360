@@ -10,7 +10,8 @@ using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.WinForms.Vistas;
 
-/// <summary>09. Devoluciones: política por motivo (Template Method), reintegro y reembolso único.</summary>
+//09
+//devoluciones: politica por motivo (Template Method), reintegro y reembolso unico
 public sealed class VistaDevoluciones : VistaBase
 {
     private readonly DataGridView _grilla = Ui.Grilla();

@@ -3,15 +3,16 @@ using LogiMarket.Domain.Comun;
 
 namespace LogiMarket.Domain.Promociones;
 
-/// <summary>Datos que una política necesita para decidir si aplica.</summary>
+//datos que una politica necesita para decidir si aplica
 public sealed record ContextoDescuento(CategoriaCliente Categoria, int UnidadesFisicas, decimal Subtotal);
 
 public sealed record ResultadoDescuento(string Politica, decimal Tasa, decimal Monto);
 
-/// <summary>
-/// Patrón Strategy: cada promoción encapsula su condición y su tasa. La prioridad es explícita:
-/// gana la política aplicable de MAYOR prioridad y nunca se acumulan descuentos.
-/// </summary>
+//patron strategy (comportamental)
+//interfaz IPoliticaDescuento
+//objetivo: cada promocion encapsula su condicion y su tasa
+//la prioridad es explicita: gana la politica aplicable de MAYOR prioridad
+//nunca se acumulan descuentos
 public interface IPoliticaDescuento
 {
     string Codigo { get; }
@@ -20,7 +21,7 @@ public interface IPoliticaDescuento
     bool Aplica(ContextoDescuento contexto);
 }
 
-/// <summary>NORMAL: 0 %. Siempre aplica y tiene la menor prioridad (política por defecto).</summary>
+//NORMAL: 0 %. Siempre aplica y tiene la menor prioridad (politica por defecto)
 public sealed class SinDescuento : IPoliticaDescuento
 {
     public string Codigo => "NORMAL";
@@ -29,7 +30,7 @@ public sealed class SinDescuento : IPoliticaDescuento
     public bool Aplica(ContextoDescuento contexto) => true;
 }
 
-/// <summary>VIP: 10 % si el cliente pertenece a la categoría VIP.</summary>
+//VIP: 10 % si el cliente pertenece a la categoria VIP
 public sealed class Vip10 : IPoliticaDescuento
 {
     public string Codigo => "VIP";
@@ -38,7 +39,7 @@ public sealed class Vip10 : IPoliticaDescuento
     public bool Aplica(ContextoDescuento contexto) => contexto.Categoria == CategoriaCliente.VIP;
 }
 
-/// <summary>MAYORISTA: 15 % si hay al menos 10 unidades físicas finales, sin importar la categoría.</summary>
+//MAYORISTA: 15 % si hay al menos 10 unidades fisicas finales, sin importar la categoria
 public sealed class Mayorista15 : IPoliticaDescuento
 {
     public const int UnidadesMinimas = ParametrosNegocio.UnidadesMinimasMayorista;
@@ -48,10 +49,9 @@ public sealed class Mayorista15 : IPoliticaDescuento
     public bool Aplica(ContextoDescuento contexto) => contexto.UnidadesFisicas >= UnidadesMinimas;
 }
 
-/// <summary>
-/// Contexto del Strategy. Depende solo de la interfaz: agregar una política nueva = registrar otra
-/// implementación, sin editar ninguna cadena de condiciones aquí (OCP).
-/// </summary>
+//contexto del Strategy
+//depende solo de la interfaz:
+//agregar una politica nueva = registrar otra implementacion, sin editar ninguna cadena de condiciones aqui (OCP)
 public interface ICalculadoraDescuento
 {
     IReadOnlyList<IPoliticaDescuento> Politicas { get; }

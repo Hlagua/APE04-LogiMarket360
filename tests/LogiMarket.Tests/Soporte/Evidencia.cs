@@ -3,11 +3,10 @@ using System.Text;
 
 namespace LogiMarket.Tests.Soporte;
 
-/// <summary>
-/// Registro de trazabilidad de las pruebas: por cada caso guarda entrada, resultado ESPERADO, resultado
-/// OBTENIDO, fecha, archivo y método. Se escribe en bin/.../evidencias/matriz-esperado-obtenido.md al correr
-/// `dotnet test` y sirve como evidencia (log) de la matriz de 38 pruebas.
-/// </summary>
+//registro de trazabilidad de las pruebas:
+//por cada caso guarda entrada, resultado ESPERADO, resultado OBTENIDO, fecha, archivo y metodo
+//se escribe en bin/.../evidencias/matriz-esperado-obtenido.md al correr `dotnet test`
+//sirve como evidencia (log) de la matriz de 38 pruebas
 public static class Evidencia
 {
     private static readonly object Candado = new();
@@ -16,7 +15,7 @@ public static class Evidencia
 
     public static string RutaArchivo => Ruta;
 
-    /// <summary>Registra el caso y falla la prueba si lo obtenido no coincide con lo esperado.</summary>
+    //registra el caso y falla la prueba si lo obtenido no coincide con lo esperado
     public static void Registrar(string caso, string entrada, string esperado, string obtenido,
         [CallerMemberName] string metodo = "", [CallerFilePath] string archivo = "")
     {

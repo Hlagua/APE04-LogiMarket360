@@ -31,40 +31,40 @@ namespace LogiMarket.Infrastructure;
 
 public sealed class OpcionesLogiMarket
 {
-    /// <summary>Ruta del archivo SQLite.</summary>
+    //ruta del archivo SQLite
     public required string RutaBaseDatos { get; init; }
 
-    /// <summary>Carpeta de comprobantes TXT y notificaciones simuladas.</summary>
+    //carpeta de comprobantes TXT y notificaciones simuladas
     public required string CarpetaSalidas { get; init; }
 
-    /// <summary>Carpeta de la bitácora técnica; null = solo en memoria.</summary>
+    //carpeta de la bitacora tecnica
+    //null = solo en memoria
     public string? CarpetaLogs { get; init; }
 }
 
-/// <summary>
-/// Registro de dependencias de Application + Infrastructure (lo usan el composition root de WinForms y las
-/// pruebas). Toda colaboración se resuelve por constructor (DIP).
-/// </summary>
+//registro de dependencias de Application + Infrastructure (lo usan el composition root de WinForms
+//las pruebas)
+//toda colaboracion se resuelve por constructor (DIP)
 public static class RegistroDependencias
 {
     public static IServiceCollection AgregarLogiMarket(this IServiceCollection s, OpcionesLogiMarket o)
     {
         var cadena = new SqliteConnectionStringBuilder { DataSource = o.RutaBaseDatos, DefaultTimeout = 30, Pooling = false }.ToString();
 
-        // ---- Singletons de sesión ----
+        //singletons de sesion
         s.AddSingleton(o);
         s.AddSingleton<IReloj, RelojSistema>();
         s.AddSingleton<IBitacoraTecnica>(_ => new BitacoraArchivo(o.CarpetaLogs));
         s.AddSingleton<ISesionActual, SesionActual>();
         s.AddSingleton<IPoliticaPermisos, PoliticaPermisos>();
         s.AddSingleton<ConfiguracionDemo>();
-        s.AddSingleton<IMetricasSesion>(MetricasSesion.Instancia); // Singleton: DI registra la ÚNICA instancia que controla la clase
+        s.AddSingleton<IMetricasSesion>(MetricasSesion.Instancia); //singleton: DI registra la UNICA instancia que controla la clase
         s.AddSingleton<IInvocadorComandos, InvocadorComandos>();
-        s.AddSingleton<IFabricaMetadatosSku, CatalogoVisualFlyweightFactory>(); // fábrica Flyweight compartida
+        s.AddSingleton<IFabricaMetadatosSku, CatalogoVisualFlyweightFactory>(); //fabrica Flyweight compartida
         s.AddSingleton<IGeneradorVistaMasiva, GeneradorVistaMasiva>();
         s.AddSingleton<IHasherContrasena, HasherContrasenaPbkdf2>();
 
-        // ---- Strategy, Abstract Factory, Chain ----
+        //strategy, Abstract Factory, Chain
         s.AddSingleton<IPoliticaDescuento, SinDescuento>();
         s.AddSingleton<IPoliticaDescuento, Vip10>();
         s.AddSingleton<IPoliticaDescuento, Mayorista15>();
@@ -75,7 +75,7 @@ public static class RegistroDependencias
         s.AddSingleton<IServicioValoracion, ServicioValoracion>();
         s.AddSingleton<ICadenaValidacionPedido, CadenaValidacionPedido>();
 
-        // ---- Persistencia (Unit of Work = DbContext por operación) ----
+        //persistencia (Unit of Work = DbContext por operacion)
         s.AddDbContext<LogiMarketDbContext>(b => b.UseSqlite(cadena), ServiceLifetime.Scoped);
         s.AddScoped<IUnidadDeTrabajo, UnidadDeTrabajoEf>();
         s.AddScoped<IInicializadorBaseDatos, InicializadorBaseDatos>();
@@ -92,7 +92,7 @@ public static class RegistroDependencias
         s.AddScoped<IAuditoriaRepositorio, AuditoriaRepositorioEf>();
         s.AddScoped<IUsuarioRepositorio, UsuarioRepositorioEf>();
 
-        // ---- Cobro: Proxy → Decorator → (Adapter legado | proveedor moderno) ----
+        //cobro: Proxy -> Decorator -> (Adapter legado | proveedor moderno)
         s.AddSingleton(sp =>
         {
             var demo = sp.GetRequiredService<ConfiguracionDemo>();
@@ -112,7 +112,7 @@ public static class RegistroDependencias
             sp.GetRequiredService<IBitacoraTecnica>(), sp.GetRequiredService<IMetricasSesion>()));
         s.AddSingleton<IServicioReembolso, ServicioReembolsoSimulado>();
 
-        // ---- Avisos (Factory Method) y Observer + Outbox ----
+        //avisos (Factory Method) y Observer + Outbox
         s.AddSingleton<CreadorNotificador>(sp => new CreadorNotificadorEmail(o.CarpetaSalidas,
             sp.GetRequiredService<ConfiguracionDemo>(), sp.GetRequiredService<IBitacoraTecnica>()));
         s.AddSingleton<CreadorNotificador>(sp => new CreadorNotificadorSms(o.CarpetaSalidas,
@@ -124,13 +124,14 @@ public static class RegistroDependencias
         s.AddScoped<IPublicadorEventos, PublicadorEventos>();
         s.AddScoped<IProcesadorOutbox, ProcesadorOutbox>();
 
-        // ---- Salidas de documentos (Bridge). VistaPrevia la registra WinForms. ----
+        //salidas de documentos (Bridge)
+        //VistaPrevia la registra WinForms
         s.AddSingleton<ISalidaDocumento>(_ => new SalidaArchivoTxt(Path.Combine(o.CarpetaSalidas, "comprobantes")));
 
-        // ---- Casos de uso ----
+        //casos de uso
         s.AddScoped<IServicioAutorizacion, ServicioAutorizacion>();
         s.AddScoped<IServicioAutenticacion, ServicioAutenticacion>();
-        s.AddScoped<IServicioConsultas, ServicioConsultas>();   // lado de lectura (CQRS)
+        s.AddScoped<IServicioConsultas, ServicioConsultas>(); //lado de lectura (CQRS)
         s.AddScoped<IServicioCatalogo, ServicioCatalogo>();
         s.AddScoped<IServicioClientes, ServicioClientes>();
         s.AddScoped<IServicioPedidos, ServicioPedidos>();

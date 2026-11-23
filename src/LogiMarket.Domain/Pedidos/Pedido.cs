@@ -6,11 +6,10 @@ using LogiMarket.Domain.Promociones;
 
 namespace LogiMarket.Domain.Pedidos;
 
-/// <summary>
-/// Agregado raíz Pedido. Sin setters públicos: toda modificación pasa por métodos que consultan el
-/// objeto de estado (State). Se construye con <see cref="PedidoBuilder"/>, se clona como plantilla
-/// (Prototype) y captura/restaura su contenido con <see cref="PedidoMemento"/> (Memento).
-/// </summary>
+//agregado raiz Pedido
+//sin setters publicos: toda modificacion pasa por metodos que consultan el objeto de estado (State)
+//se construye con PedidoBuilder
+//se clona como plantilla (Prototype) y captura/restaura su contenido con PedidoMemento (Memento)
 public class Pedido : IPrototipo<Pedido>
 {
     private readonly List<PedidoDetalle> _lineas = new();
@@ -45,7 +44,7 @@ public class Pedido : IPrototipo<Pedido>
     public decimal PesoKg => _lineas.Sum(l => l.PesoKg);
     public decimal SubtotalCalculado => Dinero.Redondear(_lineas.Sum(l => l.Subtotal));
 
-    /// <summary>Importe de productos después del descuento (sin tarifa de envío): base del reembolso.</summary>
+    //importe de productos despues del descuento (sin tarifa de envio): base del reembolso
     public decimal ImporteReembolsable => Dinero.Redondear(Subtotal - Descuento);
 
     private EstadoPedidoBase EstadoActual => EstadosPedido.De(Estado);
@@ -70,7 +69,7 @@ public class Pedido : IPrototipo<Pedido>
         Total = Subtotal;
     }
 
-    // ---------------- Edición del borrador ----------------
+    //edicion del borrador
 
     public void AgregarLinea(IElementoCatalogo elemento, int cantidad)
     {
@@ -88,7 +87,7 @@ public class Pedido : IPrototipo<Pedido>
         InvalidarValoracion();
     }
 
-    /// <summary>Invariante: un pedido siempre tiene al menos una línea (quitar la última = vaciar el carrito).</summary>
+    //invariante: un pedido siempre tiene al menos una linea (quitar la ultima = vaciar el carrito)
     public void QuitarLinea(string codigo)
     {
         EstadoActual.ExigirEdicion();
@@ -99,7 +98,7 @@ public class Pedido : IPrototipo<Pedido>
         InvalidarValoracion();
     }
 
-    /// <summary>Re-toma la instantánea de precio/composición de una línea (solo en BORRADOR).</summary>
+    //re-toma la instantanea de precio/composicion de una linea (solo en BORRADOR)
     public void ActualizarPrecioLinea(IElementoCatalogo elementoActual)
     {
         EstadoActual.ExigirEdicion();
@@ -123,7 +122,7 @@ public class Pedido : IPrototipo<Pedido>
         InvalidarValoracion();
     }
 
-    /// <summary>Cambia el cliente a partir de sus datos (borrador sin entidad Cliente a mano).</summary>
+    //cambia el cliente a partir de sus datos (borrador sin entidad Cliente a mano)
     public void CambiarCliente(int id, string nombre, string email, string telefono, CategoriaCliente categoria)
     {
         EstadoActual.ExigirEdicion();
@@ -153,7 +152,7 @@ public class Pedido : IPrototipo<Pedido>
         Total = Subtotal;
     }
 
-    // ---------------- Valoración (Strategy + tarifa de la familia de entrega) ----------------
+    //valoracion (Strategy + tarifa de la familia de entrega)
 
     public ResultadoDescuento AplicarValoracion(ICalculadoraDescuento calculadora, decimal tarifaEnvio)
     {
@@ -168,13 +167,13 @@ public class Pedido : IPrototipo<Pedido>
         return resultado;
     }
 
-    /// <summary>Requerimiento de stock expandido a SKU finales (cantidad de línea × componente).</summary>
+    //requerimiento de stock expandido a SKU finales (cantidad de linea x componente)
     public IReadOnlyDictionary<string, int> RequerimientoPorSku() =>
         _lineas.SelectMany(l => l.Componentes.Select(c => (c.Sku, Cantidad: c.CantidadPorUnidad * l.Cantidad)))
             .GroupBy(x => x.Sku, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(g => g.Key, g => g.Sum(x => x.Cantidad), StringComparer.OrdinalIgnoreCase);
 
-    // ---------------- Transiciones (State) ----------------
+    //transiciones (State)
 
     public void Validar(DateTime fecha, string usuario)
     {
@@ -226,13 +225,14 @@ public class Pedido : IPrototipo<Pedido>
         _historial.Add(new PedidoHistorialEstado(anterior, nuevo, fecha, usuario, detalle));
     }
 
-    // ---------------- Memento ----------------
+    //memento
 
     public PedidoMemento CrearMemento() =>
         new(ClienteId, ClienteNombre, ClienteEmail, ClienteTelefono, CategoriaCliente, TipoEntrega,
             _lineas.Select(l => l.Clonar()).ToList());
 
-    /// <summary>Restaura un estado completo del borrador. No puede revertir un pedido cobrado.</summary>
+    //restaura un estado completo del borrador
+    //no puede revertir un pedido cobrado
     public void Restaurar(PedidoMemento memento)
     {
         EstadoActual.ExigirEdicion();
@@ -245,7 +245,7 @@ public class Pedido : IPrototipo<Pedido>
         InvalidarValoracion();
     }
 
-    /// <summary>Reconstruye un BORRADOR nuevo desde un estado guardado (deshacer tras vaciar el carrito).</summary>
+    //reconstruye un BORRADOR nuevo desde un estado guardado (deshacer tras vaciar el carrito)
     public static Pedido DesdeMemento(PedidoMemento memento, DateTime fecha, string usuario)
     {
         if (memento.Lineas.Count == 0)
@@ -254,12 +254,10 @@ public class Pedido : IPrototipo<Pedido>
             memento.Categoria, memento.TipoEntrega, memento.Lineas.Select(l => l.Clonar()), fecha, usuario);
     }
 
-    // ---------------- Prototype ----------------
+    //prototype
 
-    /// <summary>
-    /// Clona el pedido como un BORRADOR nuevo: copia profunda de líneas y componentes,
-    /// SIN identificador, sin pago, sin clave de idempotencia ni historial.
-    /// </summary>
+    //clona el pedido como un BORRADOR nuevo:
+    //copia profunda de lineas y componentes, SIN identificador, sin pago, sin clave de idempotencia ni historial
     public Pedido Clonar()
     {
         var copia = new Pedido(ClienteId, ClienteNombre, ClienteEmail, ClienteTelefono, CategoriaCliente,
@@ -275,7 +273,7 @@ public class Pedido : IPrototipo<Pedido>
         return copia;
     }
 
-    /// <summary>Reemplaza el contenido editable con el de otro borrador (guardar ediciones del carrito).</summary>
+    //reemplaza el contenido editable con el de otro borrador (guardar ediciones del carrito)
     public void ReemplazarContenido(Pedido otro)
     {
         EstadoActual.ExigirEdicion();
@@ -283,7 +281,7 @@ public class Pedido : IPrototipo<Pedido>
     }
 }
 
-/// <summary>Historial de cambios de estado (trazabilidad).</summary>
+//historial de cambios de estado (trazabilidad)
 public class PedidoHistorialEstado
 {
     public int Id { get; private set; }

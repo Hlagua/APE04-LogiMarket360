@@ -6,7 +6,7 @@ using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.WinForms.Formularios;
 
-/// <summary>Ventana principal: navegación por pestañas hacia las 12 pantallas, coordinadas por el Mediator.</summary>
+//ventana principal: navegacion por pestañas hacia las 12 pantallas, coordinadas por el Mediator
 public sealed class FormPrincipal : Form
 {
     private readonly Ejecutor _ejecutor;
@@ -42,7 +42,7 @@ public sealed class FormPrincipal : Form
 
         var barraEstado = new StatusStrip();
         barraEstado.Items.Add(_estado);
-        // El Ejecutor es singleton y sobrevive a la sesión: hay que desuscribirse al cerrar.
+        //el Ejecutor es singleton y sobrevive a la sesion: hay que desuscribirse al cerrar
         _ejecutor.Mensaje += MostrarEstado;
         FormClosed += (_, _) => _ejecutor.Mensaje -= MostrarEstado;
 
@@ -76,7 +76,7 @@ public sealed class FormPrincipal : Form
                 !Ui.Confirmar("El carrito tiene cambios sin guardar. ¿Salir de todos modos?", "Cambios sin guardar"))
                 e.Cancel = true;
         };
-        // Ctrl+1..9 para navegar entre pestañas con el teclado.
+        //ctrl+1..9 para navegar entre pestañas con el teclado
         KeyDown += (_, e) =>
         {
             if (e.Control && e.KeyCode is >= Keys.D1 and <= Keys.D9) { _pestanas.SelectedIndex = e.KeyCode - Keys.D1; e.Handled = true; }
@@ -101,7 +101,7 @@ public sealed class FormPrincipal : Form
     private async void CerrarSesion()
     {
         if (_carrito.TieneCambiosSinGuardar && !Ui.Confirmar("Hay cambios sin guardar en el carrito. ¿Cerrar sesión?")) return;
-        _descarteConfirmado = true; // evita que FormClosing vuelva a preguntar lo mismo
+        _descarteConfirmado = true; //evita que FormClosing vuelva a preguntar lo mismo
         await _ejecutor.Ejecutar(sp => sp.GetRequiredService<IServicioAutenticacion>().CerrarSesionAsync());
         CerroSesion = true;
         Close();

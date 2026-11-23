@@ -5,7 +5,7 @@ using LogiMarket.Domain.Eventos;
 
 namespace LogiMarket.Infrastructure.Notificaciones;
 
-/// <summary>Base de los notificadores simulados: escriben un registro real en salidas/notificaciones.log.</summary>
+//base de los notificadores simulados: escriben un registro real en salidas/notificaciones.log
 public abstract class NotificadorSimuladoBase : INotificador
 {
     private static readonly object Candado = new();
@@ -53,7 +53,7 @@ public sealed class NotificadorSmsSimulado : NotificadorSimuladoBase
     protected override string Formatear(string d, string a, string m) => $"[SMS] Tel: {d} | {(m.Length > 140 ? m[..140] : m)}";
 }
 
-/// <summary>Creador concreto EMAIL: su método de fábrica entrega un notificador de correo.</summary>
+//creador concreto EMAIL: su metodo de fabrica entrega un notificador de correo
 public sealed class CreadorNotificadorEmail : CreadorNotificador
 {
     private readonly string _carpeta;
@@ -72,7 +72,7 @@ public sealed class CreadorNotificadorEmail : CreadorNotificador
     protected override string ObtenerDestinatario(EventoNegocio e) => string.IsNullOrWhiteSpace(e.ClienteEmail) ? "sin-email" : e.ClienteEmail;
 }
 
-/// <summary>Creador concreto SMS: su método de fábrica entrega un notificador SMS.</summary>
+//creador concreto SMS: su metodo de fabrica entrega un notificador SMS
 public sealed class CreadorNotificadorSms : CreadorNotificador
 {
     private readonly string _carpeta;

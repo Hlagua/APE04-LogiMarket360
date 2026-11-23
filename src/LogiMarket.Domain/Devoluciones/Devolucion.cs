@@ -8,7 +8,7 @@ public enum MotivoDevolucion
     ARREPENTIMIENTO
 }
 
-/// <summary>Devolución TOTAL aceptada (única por pedido) con su reembolso simulado único.</summary>
+//devolucion TOTAL aceptada (unica por pedido) con su reembolso simulado unico
 public class Devolucion
 {
     public int Id { get; private set; }

@@ -2,10 +2,9 @@ using LogiMarket.Domain.Comun;
 
 namespace LogiMarket.Domain.Catalogo;
 
-/// <summary>
-/// Construye la estructura Composite a partir de las entidades persistidas (Producto/Kit) y detecta
-/// ciclos indirectos. Es una política pura del dominio, sin acceso a datos.
-/// </summary>
+//construye la estructura Composite a partir de las entidades persistidas (Producto/Kit)
+//detecta ciclos indirectos
+//es una politica pura del dominio, sin acceso a datos
 public sealed class ArbolCatalogo
 {
     private readonly Dictionary<string, Producto> _productos;
@@ -51,7 +50,7 @@ public sealed class ArbolCatalogo
         return _cache[codigo] = compuesto;
     }
 
-    /// <summary>Valida que todos los kits se puedan construir sin ciclos ni referencias rotas.</summary>
+    //valida que todos los kits se puedan construir sin ciclos ni referencias rotas
     public void ValidarIntegridad()
     {
         foreach (var codigo in _kits.Keys) Obtener(codigo);

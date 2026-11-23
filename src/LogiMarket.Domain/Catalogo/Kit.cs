@@ -2,10 +2,9 @@ using LogiMarket.Domain.Comun;
 
 namespace LogiMarket.Domain.Catalogo;
 
-/// <summary>
-/// Kit persistido. Cada componente referencia con FK real a un Producto o a otro Kit (exactamente uno).
-/// La detección de ciclos indirectos se hace con <see cref="ArbolCatalogo"/> antes de persistir.
-/// </summary>
+//kit persistido
+//cada componente referencia con FK real a un Producto o a otro Kit (exactamente uno)
+//la deteccion de ciclos indirectos se hace con ArbolCatalogo antes de persistir
 public class Kit
 {
     private readonly List<KitComponente> _componentes = new();

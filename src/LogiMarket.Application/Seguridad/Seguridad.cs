@@ -5,7 +5,7 @@ namespace LogiMarket.Application.Seguridad;
 
 public sealed record UsuarioSesion(int Id, string NombreUsuario, string NombreCompleto, Rol Rol);
 
-/// <summary>Sesión local actual (aplicación de escritorio de un solo usuario a la vez).</summary>
+//sesion local actual (aplicacion de escritorio de un solo usuario a la vez)
 public interface ISesionActual
 {
     UsuarioSesion? Usuario { get; }
@@ -50,7 +50,8 @@ public interface IPoliticaPermisos
     IEnumerable<Rol> RolesPara(Operacion operacion);
 }
 
-/// <summary>Matriz rol → operaciones. Es la política de seguridad real (no los botones de la UI).</summary>
+//matriz rol -> operaciones
+//es la politica de seguridad real (no los botones de la UI)
 public sealed class PoliticaPermisos : IPoliticaPermisos
 {
     private static readonly Rol[] Todos = { Rol.ADMIN, Rol.VENTAS, Rol.BODEGA, Rol.CONSULTA };
@@ -83,7 +84,7 @@ public sealed class PoliticaPermisos : IPoliticaPermisos
     public IEnumerable<Rol> RolesPara(Operacion operacion) => _matriz[operacion];
 }
 
-/// <summary>Punto único de autorización de los casos de uso (servicios protegidos).</summary>
+//punto unico de autorizacion de los casos de uso (servicios protegidos)
 public interface IServicioAutorizacion
 {
     bool Puede(Operacion operacion);
@@ -123,7 +124,7 @@ public sealed class ServicioAutorizacion : IServicioAutorizacion
     }
 }
 
-/// <summary>Puerto de hash de contraseñas (implementado con PBKDF2 en Infrastructure).</summary>
+//puerto de hash de contraseñas (implementado con PBKDF2 en Infrastructure)
 public interface IHasherContrasena
 {
     string Hashear(string contrasena);

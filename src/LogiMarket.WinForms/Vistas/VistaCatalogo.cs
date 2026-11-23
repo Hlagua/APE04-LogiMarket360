@@ -8,7 +8,8 @@ using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.WinForms.Vistas;
 
-/// <summary>03. Catálogo y kits: CRUD de productos, kits anidados (Composite) y desglose (Iterator/Visitor).</summary>
+//03
+//catalogo y kits: CRUD de productos, kits anidados (Composite) y desglose (Iterator/Visitor)
 public sealed class VistaCatalogo : VistaBase
 {
     private readonly TextBox _buscar = Ui.Texto(200, "Buscar SKU, nombre o categoría");
@@ -78,7 +79,7 @@ public sealed class VistaCatalogo : VistaBase
         _precio.Value = p.Precio;
         _peso.Value = p.PesoKg;
         _stock.Value = p.Stock;
-        _stock.Enabled = false; // el stock se cambia en Inventario con movimiento trazable
+        _stock.Enabled = false; //el stock se cambia en Inventario con movimiento trazable
     }
 
     private void Limpiar()
@@ -103,7 +104,7 @@ public sealed class VistaCatalogo : VistaBase
             ? sp.GetRequiredService<IServicioCatalogo>().CrearProductoAsync(datos)
             : sp.GetRequiredService<IServicioCatalogo>().ActualizarProductoAsync(datos));
         if (!Ejecutor.Mostrar(r)) return;
-        await RefrescarAsync(); // el Mediator no refresca al emisor: la vista se actualiza a sí misma
+        await RefrescarAsync(); //el Mediator no refresca al emisor: la vista se actualiza a si misma
         await NotificarAsync(EventoVista.CatalogoCambiado);
     }
 
@@ -113,11 +114,11 @@ public sealed class VistaCatalogo : VistaBase
         if (!Ui.Confirmar($"¿{(p.Activo ? "Desactivar" : "Activar")} el producto {p.Sku}?")) return;
         var (_, r) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<IServicioCatalogo>().CambiarEstadoProductoAsync(p.Sku, !p.Activo));
         if (!Ejecutor.Mostrar(r)) return;
-        await RefrescarAsync(); // el Mediator no refresca al emisor: la vista se actualiza a sí misma
+        await RefrescarAsync(); //el Mediator no refresca al emisor: la vista se actualiza a si misma
         await NotificarAsync(EventoVista.CatalogoCambiado);
     }
 
-    /// <summary>Interpreta "P01x1, KIT_OFICINA x2" como lista de componentes.</summary>
+    //interpreta "P01x1, KIT_OFICINA x2" como lista de componentes
     private bool LeerComponentes(out List<(string, int)> componentes)
     {
         componentes = new List<(string, int)>();
@@ -138,7 +139,7 @@ public sealed class VistaCatalogo : VistaBase
             !Validar(_kitNombre, _kitNombre.Text.Trim().Length > 0, "Nombre obligatorio") || !LeerComponentes(out var comps)) return;
         var (_, r) = await Ejecutor.Ejecutar(sp => sp.GetRequiredService<IServicioCatalogo>().CrearKitAsync(_kitCodigo.Text, _kitNombre.Text, comps));
         if (!Ejecutor.Mostrar(r)) return;
-        await RefrescarAsync(); // el Mediator no refresca al emisor: la vista se actualiza a sí misma
+        await RefrescarAsync(); //el Mediator no refresca al emisor: la vista se actualiza a si misma
         await NotificarAsync(EventoVista.CatalogoCambiado);
     }
 

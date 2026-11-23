@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Design;
 
 namespace LogiMarket.Infrastructure.Persistencia;
 
-/// <summary>Usada solo por 'dotnet ef migrations' en tiempo de diseño.</summary>
+//usada solo por 'dotnet ef migrations' en tiempo de diseño
 public sealed class FabricaDisenoDbContext : IDesignTimeDbContextFactory<LogiMarketDbContext>
 {
     public LogiMarketDbContext CreateDbContext(string[] args) =>

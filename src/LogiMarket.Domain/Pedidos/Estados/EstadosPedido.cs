@@ -2,18 +2,18 @@ using LogiMarket.Domain.Comun;
 
 namespace LogiMarket.Domain.Pedidos.Estados;
 
-/// <summary>
-/// Patrón State: cada estado decide qué acciones son válidas y cuál es el siguiente estado.
-/// El agregado Pedido delega en el objeto de estado en lugar de usar un switch gigante.
-/// </summary>
+//patron state (comportamental)
+//clase EstadoPedidoBase
+//objetivo: cada estado decide que acciones son validas y cual es el siguiente estado
+//el agregado Pedido delega en el objeto de estado en lugar de usar un switch gigante
 public abstract class EstadoPedidoBase
 {
     public abstract EstadoPedido Codigo { get; }
 
-    /// <summary>¿Se pueden modificar líneas, cantidades, precios o forma de entrega?</summary>
+    //se pueden modificar lineas, cantidades, precios o forma de entrega?
     public virtual bool PermiteEdicion => false;
 
-    /// <summary>¿Se puede (re)calcular subtotal, descuento y tarifa?</summary>
+    //se puede (re)calcular subtotal, descuento y tarifa?
     public virtual bool PermiteValoracion => false;
 
     public virtual bool PermiteCobro => false;
@@ -77,7 +77,7 @@ public sealed class EstadoCancelado : EstadoPedidoBase
     public override EstadoPedido Codigo => EstadoPedido.CANCELADO;
 }
 
-/// <summary>Registro de estados (sin estado interno, se comparten).</summary>
+//registro de estados (sin estado interno, se comparten)
 public static class EstadosPedido
 {
     private static readonly IReadOnlyDictionary<EstadoPedido, EstadoPedidoBase> Mapa =

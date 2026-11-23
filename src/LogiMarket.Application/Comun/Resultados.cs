@@ -1,6 +1,6 @@
 namespace LogiMarket.Application.Comun;
 
-/// <summary>Resultado estructurado de una operación de aplicación (éxito o rechazo con código).</summary>
+//resultado estructurado de una operacion de aplicacion (exito o rechazo con codigo)
 public class ResultadoOperacion
 {
     public bool Exito { get; init; }

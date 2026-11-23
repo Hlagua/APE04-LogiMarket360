@@ -4,7 +4,7 @@ public sealed record InstantaneaMetricas(Guid InstanciaId, DateTime Inicio, int 
     int ConfirmacionesRepetidas, int Despachos, int Entregas, int Devoluciones, int Notificaciones, int EventosProcesados,
     int OperacionesDenegadas, decimal MontoCobrado);
 
-/// <summary>Contrato de las métricas de sesión (los consumidores dependen de la abstracción, DIP).</summary>
+//contrato de las metricas de sesion (los consumidores dependen de la abstraccion, DIP)
 public interface IMetricasSesion
 {
     Guid InstanciaId { get; }
@@ -22,12 +22,14 @@ public interface IMetricasSesion
     InstantaneaMetricas Instantanea();
 }
 
-/// <summary>
-/// Patrón Singleton: la propia clase impide una segunda instancia (constructor privado) y expone la única
-/// por <see cref="Instancia"/> (inicialización perezosa y segura para hilos). El contenedor DI registra
-/// ESA instancia (AddSingleton(MetricasSesion.Instancia)), de modo que DI y cualquier otro acceso comparten
-/// el mismo objeto. Contadores de la SESIÓN con lock; la base de datos sigue siendo la fuente de verdad.
-/// </summary>
+//patron singleton (creacional)
+//clase MetricasSesion
+//objetivo: la propia clase impide una segunda instancia (constructor privado)
+//expone la unica por Instancia (inicializacion perezosa y segura para hilos)
+//el contenedor DI registra ESA instancia (AddSingleton(MetricasSesion.Instancia))
+//de modo que DI y cualquier otro acceso comparten el mismo objeto
+//contadores de la SESION con lock
+//la base de datos sigue siendo la fuente de verdad
 public sealed class MetricasSesion : IMetricasSesion
 {
     private static readonly Lazy<MetricasSesion> Unica = new(() => new MetricasSesion(), LazyThreadSafetyMode.ExecutionAndPublication);
@@ -44,10 +46,9 @@ public sealed class MetricasSesion : IMetricasSesion
     public Guid InstanciaId { get; } = Guid.NewGuid();
     public DateTime Inicio { get; private set; } = DateTime.Now;
 
-    /// <summary>
-    /// Pone los contadores en cero sin crear otra instancia. Solo para pruebas automatizadas (cada prueba
-    /// parte de una base restablecida y necesita contadores limpios).
-    /// </summary>
+    //pone los contadores en cero sin crear otra instancia
+    //solo para pruebas automatizadas (cada prueba parte de una base restablecida
+    //necesita contadores limpios)
     internal void Reiniciar()
     {
         lock (_candado)
@@ -59,7 +60,7 @@ public sealed class MetricasSesion : IMetricasSesion
         }
     }
 
-    /// <summary>Se dispara tras cada cambio (el Mediator de la UI lo usa para refrescar la vista de métricas).</summary>
+    //se dispara tras cada cambio (el Mediator de la UI lo usa para refrescar la vista de metricas)
     public event Action<InstantaneaMetricas>? Cambiaron;
 
     public void RegistrarConfirmacion(decimal monto) => Modificar(() => { _confirmados++; _monto += monto; });
@@ -71,8 +72,8 @@ public sealed class MetricasSesion : IMetricasSesion
     public void RegistrarNotificacion() => Modificar(() => _notificaciones++);
     public void RegistrarDenegacion() => Modificar(() => _denegadas++);
 
-    /// <summary>Cuenta un evento de Outbox una sola vez aunque se reintente su publicación.</summary>
-    /// <remarks>Un evento sin id de Outbox (publicado solo en memoria) no se puede deduplicar: se cuenta siempre.</remarks>
+    //cuenta un evento de Outbox una sola vez aunque se reintente su publicacion
+    //un evento sin id de Outbox (publicado solo en memoria) no se puede deduplicar: se cuenta siempre
     public bool RegistrarEventoProcesado(int eventoId) =>
         Modificar(() =>
         {
@@ -92,7 +93,8 @@ public sealed class MetricasSesion : IMetricasSesion
 
     private void Modificar(Action accion) => Modificar(() => { accion(); return true; });
 
-    /// <summary>Aplica el cambio y toma la instantánea en un solo bloqueo; avisa solo si algo cambió.</summary>
+    //aplica el cambio y toma la instantanea en un solo bloqueo
+    //avisa solo si algo cambio
     private bool Modificar(Func<bool> accion)
     {
         bool cambio;

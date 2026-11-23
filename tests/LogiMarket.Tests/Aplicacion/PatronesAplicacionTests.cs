@@ -25,7 +25,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace LogiMarket.Tests.Aplicacion;
 
-/// <summary>Salida de prueba del Bridge (sustituye a la VistaPrevia de WinForms).</summary>
+//salida de prueba del Bridge (sustituye a la VistaPrevia de WinForms)
 public sealed class SalidaMemoria : ISalidaDocumento
 {
     public List<(string Titulo, string Contenido)> Emitidos { get; } = new();
@@ -37,7 +37,7 @@ public sealed class SalidaMemoria : ISalidaDocumento
     }
 }
 
-/// <summary>Pasarela espía para verificar si el Proxy llegó a invocarla.</summary>
+//pasarela espia para verificar si el Proxy llego a invocarla
 public sealed class PasarelaEspia : IPasarelaPago
 {
     public int Invocaciones { get; private set; }
@@ -77,7 +77,7 @@ public class PatronesAplicacionTests
             Assert.StartsWith(prefijo, guia.Numero);
             Assert.Equal(hoy.AddDays(dias), guia.FechaEstimada);
         }
-        // Mezclar familias se rechaza.
+        //mezclar familias se rechaza
         var mezcla = Assert.Throws<ExcepcionDominio>(() => new EntregaExpresFactory().CrearGeneradorGuia()
             .Generar(1, "Ana", 1m, hoy, new EntregaEstandarFactory().CrearCalculadoraPlazo()));
         Assert.Equal("FAMILIA_MEZCLADA", mezcla.Codigo);
@@ -145,7 +145,7 @@ public class PatronesAplicacionTests
     [Fact(DisplayName = "P26 Interpreter: precedencia AND/OR, paréntesis y errores de sintaxis")]
     public void P26_Interpreter_PrecedenciaYErrores()
     {
-        // Sin paréntesis AND se evalúa antes que OR.
+        //sin parentesis AND se evalua antes que OR
         Assert.Equal(new[] { 1, 2, 5 }, Filtrar("ESTADO = ENTREGADO OR ESTADO = PAGADO AND TOTAL >= 50"));
         Assert.Equal(new[] { 1, 2 }, Filtrar("(ESTADO = ENTREGADO OR ESTADO = PAGADO) AND TOTAL >= 50"));
         Assert.Equal("((ESTADO = ENTREGADO OR ESTADO = PAGADO) AND TOTAL >= 50.00)",
@@ -181,7 +181,7 @@ public class PatronesAplicacionTests
 
         Assert.Contains(bitacora.Entradas("PAGO"), e => e.Mensaje.Contains("CobrarCentavos(5900"));
         Assert.Equal(1, legada.CobrosEjecutados);
-        // La capa Application no conoce la operación legada.
+        //la capa Application no conoce la operacion legada
         Assert.DoesNotContain(typeof(IPasarelaPago).Assembly.GetTypes(),
             t => t.GetMethods().Any(m => m.Name == "CobrarCentavos"));
     }
@@ -302,9 +302,10 @@ public class PatronesAplicacionTests
         Assert.Equal(5, fabrica.InstanciasCreadas);
         Assert.True(ReferenceEquals(filas[0].Metadatos, filas[5].Metadatos));
         Assert.True(medicion.ReferenciasCompartidas);
-        // Comprobación estable: objetos retenidos por identidad. La memoria (GC) solo se reporta.
+        //comprobacion estable: objetos retenidos por identidad
+        //la memoria (GC) solo se reporta
         Assert.True(medicion.CadenasRetenidasConFlyweight < medicion.CadenasRetenidasSinFlyweight);
-        Assert.NotEqual(filas[0].Stock + filas[0].Cantidad, filas[5].Stock + filas[5].Cantidad + 1000); // extrínseco por fila
+        Assert.NotEqual(filas[0].Stock + filas[0].Cantidad, filas[5].Stock + filas[5].Cantidad + 1000); //extrinseco por fila
     }
 
     [Fact(DisplayName = "P15 Singleton: dos consumidores reciben la misma instancia; contadores thread-safe")]
@@ -315,8 +316,8 @@ public class PatronesAplicacionTests
         using var scope = e.Proveedor.CreateScope();
         var vistaB = scope.ServiceProvider.GetRequiredService<IMetricasSesion>();
         Assert.Same(vistaA, vistaB);
-        Assert.Same(MetricasSesion.Instancia, vistaA); // DI entrega la instancia que controla la propia clase
-        Assert.Empty(typeof(MetricasSesion).GetConstructors()); // sin constructores públicos: no hay "new MetricasSesion()"
+        Assert.Same(MetricasSesion.Instancia, vistaA); //DI entrega la instancia que controla la propia clase
+        Assert.Empty(typeof(MetricasSesion).GetConstructors()); //sin constructores publicos: no hay "new MetricasSesion()"
         Assert.Same(MetricasSesion.Instancia, MetricasSesion.Instancia);
 
         Parallel.For(0, 1000, _ => vistaA.RegistrarNotificacion());
@@ -325,7 +326,8 @@ public class PatronesAplicacionTests
         Assert.Equal((1000, 500), (foto.Notificaciones, foto.Despachos));
         Assert.Equal(vistaA.InstanciaId, foto.InstanciaId);
 
-        // Eventos con id de Outbox se cuentan una vez; los que no tienen id (solo memoria) siempre.
+        //eventos con id de Outbox se cuentan una vez
+        //los que no tienen id (solo memoria) siempre
         var avisos = 0;
         vistaA.Cambiaron += _ => avisos++;
         Assert.True(vistaA.RegistrarEventoProcesado(7));
@@ -333,18 +335,19 @@ public class PatronesAplicacionTests
         Assert.True(vistaA.RegistrarEventoProcesado(0));
         Assert.True(vistaA.RegistrarEventoProcesado(0));
         Assert.Equal(3, vistaA.Instantanea().EventosProcesados);
-        Assert.Equal(3, avisos); // el reintento duplicado no notifica
+        Assert.Equal(3, avisos); //el reintento duplicado no notifica
     }
 
     [Fact(DisplayName = "P38 ISP/DIP: interfaces pequeñas y Application/Domain sin dependencias de infraestructura")]
     public void P38_IspDip()
     {
-        // ISP: ningún puerto obliga a más de 6 miembros; cobro y reembolso están segregados.
+        //ISP: ningun puerto obliga a mas de 6 miembros
+        //cobro y reembolso estan segregados
         var puertos = typeof(IPasarelaPago).Assembly.GetTypes().Where(t => t.IsInterface && t.Namespace!.EndsWith("Puertos"));
         Assert.All(puertos, p => Assert.True(p.GetMethods().Length <= 6, $"{p.Name} tiene {p.GetMethods().Length} miembros"));
         Assert.DoesNotContain(typeof(IPasarelaPago).GetMethods(), m => m.Name.Contains("Reembols"));
 
-        // DIP / regla de dependencia: verificada en los ensamblados compilados.
+        //DIP / regla de dependencia: verificada en los ensamblados compilados
         static string[] Refs(Assembly a) => a.GetReferencedAssemblies().Select(r => r.Name!).ToArray();
         var dominio = Refs(typeof(Pedido).Assembly);
         var aplicacion = Refs(typeof(IPasarelaPago).Assembly);

@@ -2,7 +2,8 @@ using LogiMarket.Domain.Comun;
 
 namespace LogiMarket.Domain.Usuarios;
 
-/// <summary>Cuenta local. Solo guarda el hash de la contraseña, nunca el texto claro.</summary>
+//cuenta local
+//solo guarda el hash de la contraseña, nunca el texto claro
 public class Usuario
 {
     public int Id { get; private set; }

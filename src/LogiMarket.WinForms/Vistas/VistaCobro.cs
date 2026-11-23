@@ -10,7 +10,8 @@ using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.WinForms.Vistas;
 
-/// <summary>07. Confirmación y cobro: ejecuta ConfirmarPedidoCommand (Facade) mediante el invocador.</summary>
+//07
+//confirmacion y cobro: ejecuta ConfirmarPedidoCommand (Facade) mediante el invocador
 public sealed class VistaCobro : VistaBase
 {
     private readonly ComboBox _pedido = Ui.Combo(320), _proveedor = Ui.Combo(120);
@@ -43,8 +44,8 @@ public sealed class VistaCobro : VistaBase
         {
             _pedido.DisplayMember = "Texto";
             _pedido.ValueMember = "Id";
-            // Se incluyen los PAGADOS para poder demostrar P07: repetir con la misma clave devuelve el
-            // resultado original sin un segundo cobro (lo garantizan la idempotencia y el State).
+            //se incluyen los PAGADOS para poder demostrar P07: repetir con la misma clave devuelve el
+            //resultado original sin un segundo cobro (lo garantizan la idempotencia y el State)
             _pedido.DataSource = lista.Where(p => p.Estado is "BORRADOR" or "VALIDADO" or "PAGADO")
                 .Select(p => new { p.Id, Texto = $"{p.Numero} - {p.Cliente} - {p.Estado} - {Ui.Usd(p.Total)}" }).ToList();
             if (seleccionado is not null) _pedido.SelectedValue = seleccionado;
@@ -97,7 +98,7 @@ public sealed class VistaCobro : VistaBase
             Ejecutor.Mostrar(r, r.Exito);
             if (r.Exito) await NotificarAsync(EventoVista.PedidoConfirmado, id);
             else await NotificarAsync(EventoVista.MetricasCambiadas, id);
-            await RefrescarAsync(); // el emisor no lo refresca el Mediator: se actualiza el estado mostrado
+            await RefrescarAsync(); //el emisor no lo refresca el Mediator: se actualiza el estado mostrado
         }
         finally
         {

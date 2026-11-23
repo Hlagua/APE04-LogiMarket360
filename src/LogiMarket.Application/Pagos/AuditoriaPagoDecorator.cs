@@ -3,10 +3,10 @@ using LogiMarket.Application.Puertos;
 
 namespace LogiMarket.Application.Pagos;
 
-/// <summary>
-/// Patrón Decorator: envuelve cualquier IPasarelaPago para registrar INICIO, y FIN o ERROR, con un
-/// identificador de correlación, SIN alterar el resultado del cobro concreto.
-/// </summary>
+//patron decorator (estructural)
+//clase AuditoriaPagoDecorator
+//objetivo: envuelve cualquier IPasarelaPago para registrar INICIO, y FIN o ERROR
+//con un identificador de correlacion, SIN alterar el resultado del cobro concreto
 public sealed class AuditoriaPagoDecorator : IPasarelaPago
 {
     public const string Categoria = "PAGO";

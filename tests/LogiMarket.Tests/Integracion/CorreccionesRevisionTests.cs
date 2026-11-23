@@ -20,14 +20,14 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace LogiMarket.Tests.Integracion;
 
-/// <summary>Pruebas de las correcciones de la revisión (idempotencia, Outbox, Memento, Flyweight, filtros).</summary>
+//pruebas de las correcciones de la revision (idempotencia, Outbox, Memento, Flyweight, filtros)
 public class CorreccionesRevisionTests
 {
     private static IServicioValoracion Valoracion() => new ServicioValoracion(CalculadoraDescuento.PorDefecto(),
         new Application.Entrega.ProveedorFabricasEntrega(new Application.Entrega.IFabricaEntrega[]
             { new Application.Entrega.EntregaEstandarFactory(), new Application.Entrega.EntregaExpresFactory() }));
 
-    // ---------------- Pasarela idempotente ----------------
+    //pasarela idempotente
 
     [Fact(DisplayName = "Pasarela: la misma clave aprobada no vuelve a cobrar (legado vía Adapter y moderno)")]
     public async Task Pasarela_IdempotentePorClave()
@@ -50,14 +50,14 @@ public class CorreccionesRevisionTests
 
         await Assert.ThrowsAsync<ArgumentException>(() => adapter.CobrarAsync(60m, "K-1")); // misma clave, otro monto
 
-        // Un rechazo no queda recordado: el mismo pedido se puede reintentar con la misma clave.
+        //un rechazo no queda recordado: el mismo pedido se puede reintentar con la misma clave
         demo.ForzarRechazoCobro = true;
         Assert.False((await adapter.CobrarAsync(10m, "K-3")).Aprobado);
         demo.ForzarRechazoCobro = false;
         Assert.True((await adapter.CobrarAsync(10m, "K-3")).Aprobado);
     }
 
-    /// <summary>Repositorio de Outbox que falla la primera vez que se le agrega un evento.</summary>
+    //repositorio de Outbox que falla la primera vez que se le agrega un evento
     private sealed class OutboxQueFallaUnaVez(IOutboxRepositorio real, Contador contador) : IOutboxRepositorio
     {
         public Task<IReadOnlyList<EventoOutbox>> PendientesAsync(int maximo, CancellationToken ct = default) => real.PendientesAsync(maximo, ct);
@@ -94,9 +94,9 @@ public class CorreccionesRevisionTests
             $"{await e.Db(db => db.Pagos.CountAsync())} pago, {legada.CobrosEjecutados} cobro real en la pasarela");
     }
 
-    // ---------------- Outbox: aviso no duplicado ----------------
+    //outbox: aviso no duplicado
 
-    /// <summary>Observador que falla la primera vez (simula una caída después de enviar el aviso).</summary>
+    //observador que falla la primera vez (simula una caida despues de enviar el aviso)
     private sealed class ObservadorQueFallaUnaVez(Contador contador) : IObservadorEventos
     {
         public string Nombre => "Falla una vez";
@@ -112,7 +112,7 @@ public class CorreccionesRevisionTests
         await e.IniciarSesion("ventas");
         var id = await e.CrearBorrador("Ana", TipoEntrega.ESTANDAR, ("KIT_TELETRABAJO", 1));
         Assert.True((await e.Confirmar(id)).Exito);
-        Assert.Null(await e.Db(db => db.EventosOutbox.Select(x => x.FechaProcesado).SingleAsync())); // quedó pendiente
+        Assert.Null(await e.Db(db => db.EventosOutbox.Select(x => x.FechaProcesado).SingleAsync())); //quedo pendiente
 
         var r = await e.Usar<IProcesadorOutbox, ResultadoProcesoOutbox>(p => p.ProcesarPendientesAsync());
         var lineas = File.ReadAllLines(Path.Combine(e.CarpetaSalidas, "notificaciones.log")).Length;
@@ -121,7 +121,7 @@ public class CorreccionesRevisionTests
             $"{r.Procesados} evento procesado, {lineas} aviso enviado, {e.Unico<IMetricasSesion>().Instantanea().Notificaciones} métrica de aviso");
     }
 
-    // ---------------- Memento completo ----------------
+    //memento completo
 
     [Fact(DisplayName = "P29 Memento: deshacer la primera línea vuelve al carrito vacío y rehacer la recupera")]
     public void Memento_CarritoVacio()
@@ -154,7 +154,7 @@ public class CorreccionesRevisionTests
         Assert.Equal("Luis", editor.Pedido.ClienteNombre);
     }
 
-    // ---------------- Bordes de stock y entradas inválidas ----------------
+    //bordes de stock y entradas invalidas
 
     [Fact(DisplayName = "Stock: se acepta stock == cantidad y se rechaza cantidad > stock")]
     public void Stock_Borde()
@@ -182,13 +182,13 @@ public class CorreccionesRevisionTests
         var admin = scope.ServiceProvider.GetRequiredService<IServicioAdministracion>();
         Assert.Throws<ExcepcionAplicacion>(() => admin.AplicarDemo(c => c.ProveedorPago = "PAYPAL"));
         Assert.Throws<ExcepcionAplicacion>(() => admin.AplicarDemo(c => c.CanalNotificacion = "FAX"));
-        Assert.Equal(ConfiguracionDemo.ProveedorLegado, e.Unico<ConfiguracionDemo>().ProveedorPago); // sin cambios
+        Assert.Equal(ConfiguracionDemo.ProveedorLegado, e.Unico<ConfiguracionDemo>().ProveedorPago); //sin cambios
 
         e.Unico<ConfiguracionDemo>().ProveedorPago = "INEXISTENTE";
         Assert.Throws<ExcepcionAplicacion>(() => e.Unico<SelectorPasarela>().Actual);
     }
 
-    // ---------------- Interpreter: CLIENTE exacto ----------------
+    //interpreter: CLIENTE exacto
 
     [Fact(DisplayName = "P25 Interpreter: CLIENTE = texto es igualdad del nombre (CLIENTE = a no incluye a Ana)")]
     public void Interpreter_ClienteExacto()
@@ -204,7 +204,7 @@ public class CorreccionesRevisionTests
         Assert.Equal(new[] { 2 }, F("CLIENTE != Ana"));
     }
 
-    // ---------------- Flyweight determinista ----------------
+    //flyweight determinista
 
     [Fact(DisplayName = "P21 Flyweight: identidad compartida y recuento de objetos (comprobación estable)")]
     public void Flyweight_Determinista()
@@ -218,10 +218,11 @@ public class CorreccionesRevisionTests
             "ReferenceEquals=True; 5 instancias; 20 cadenas con Flyweight; 4000 cadenas sin Flyweight",
             $"ReferenceEquals={m.ReferenciasCompartidas}; {m.InstanciasMetadatos} instancias; {m.CadenasRetenidasConFlyweight} cadenas con Flyweight; " +
             $"{m.CadenasRetenidasSinFlyweight} cadenas sin Flyweight");
-        // La memoria (GC.GetTotalMemory) se reporta; no se usa como aserción porque depende del recolector.
+        //la memoria (GC.GetTotalMemory) se reporta
+        //no se usa como asercion porque depende del recolector
         Assert.True(m.BytesConFlyweight >= 0 || m.BytesSinFlyweight >= 0);
 
-        // Si el catálogo cambia, el SKU recibe UNA nueva instancia (no se queda con datos viejos).
+        //si el catalogo cambia, el SKU recibe UNA nueva instancia (no se queda con datos viejos)
         var antes = fabrica.Obtener("P01", "Mouse USB", "Periféricos", "Mouse óptico con cable USB");
         var despues = fabrica.Obtener("P01", "Mouse USB Pro", "Periféricos", "Mouse óptico con cable USB");
         Assert.NotSame(antes, despues);
@@ -229,7 +230,7 @@ public class CorreccionesRevisionTests
         Assert.Same(despues, fabrica.Obtener("P01", "Mouse USB Pro", "Periféricos", "Mouse óptico con cable USB"));
     }
 
-    // ---------------- Regla MAYORISTA confirmada con la guía ----------------
+    //regla MAYORISTA confirmada con la guia
 
     [Fact(DisplayName = "P32 Strategy: MAYORISTA depende de 10 unidades, no de la categoría (texto literal de la guía)")]
     public void Mayorista_PorUnidades()

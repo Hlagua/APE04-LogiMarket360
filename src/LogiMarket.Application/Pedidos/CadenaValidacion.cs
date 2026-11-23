@@ -15,7 +15,8 @@ public sealed record ResultadoValidacion(bool EsValido, RechazoValidacion? Recha
         EsValido ? $"VÁLIDO ({string.Join(" → ", Recorrido)})" : $"RECHAZO en {Rechazo!.Eslabon}: {Rechazo.Mensaje}";
 }
 
-/// <summary>Datos que recorren la cadena. El stock disponible se lee dentro de la transacción.</summary>
+//datos que recorren la cadena
+//el stock disponible se lee dentro de la transaccion
 public sealed class ContextoValidacion
 {
     public required Pedido Pedido { get; init; }
@@ -24,10 +25,11 @@ public sealed class ContextoValidacion
     public UsuarioSesion? Usuario { get; init; }
 }
 
-/// <summary>
-/// Patrón Chain of Responsibility: cada eslabón evalúa una condición; si falla devuelve un rechazo
-/// estructurado y detiene la cadena, si no delega en el siguiente. No sustituye a las invariantes del dominio.
-/// </summary>
+//patron chain of responsibility (comportamental)
+//clase EslabonValidacion
+//objetivo: cada eslabon evalua una condicion
+//si falla devuelve un rechazo estructurado y detiene la cadena, si no delega en el siguiente
+//no sustituye a las invariantes del dominio
 public abstract class EslabonValidacion
 {
     private EslabonValidacion? _siguiente;
@@ -121,7 +123,7 @@ public sealed class CondicionesConfirmacionValidador : EslabonValidacion
     }
 }
 
-/// <summary>Arma la cadena en el orden exigido: cliente → líneas → stock → autorización/condiciones.</summary>
+//arma la cadena en el orden exigido: cliente -> lineas -> stock -> autorizacion/condiciones
 public sealed class CadenaValidacionPedido : ICadenaValidacionPedido
 {
     private readonly EslabonValidacion _cabeza;

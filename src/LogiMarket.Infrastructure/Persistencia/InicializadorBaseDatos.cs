@@ -9,11 +9,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LogiMarket.Infrastructure.Persistencia;
 
-/// <summary>
-/// Aplica las migraciones EF Core (creando la base desde cero si no existe) y ejecuta una semilla
-/// IDEMPOTENTE: cada registro se busca por su clave natural (SKU, código, usuario, identificación)
-/// antes de insertarlo, por lo que relanzarla no duplica datos.
-/// </summary>
+//aplica las migraciones EF Core (creando la base desde cero si no existe) y ejecuta una semilla
+//IDEMPOTENTE: cada registro se busca por su clave natural (SKU, codigo, usuario, identificacion)
+//antes de insertarlo, por lo que relanzarla no duplica datos
 public sealed class InicializadorBaseDatos : IInicializadorBaseDatos
 {
     private readonly LogiMarketDbContext _db;
@@ -29,7 +27,7 @@ public sealed class InicializadorBaseDatos : IInicializadorBaseDatos
 
     public string Descripcion => _db.Database.GetDbConnection().DataSource;
 
-    /// <summary>Catálogo oficial de la guía APE 04.</summary>
+    //catalogo oficial de la guia APE 04
     public static readonly (string Sku, string Nombre, string Categoria, string Descripcion, decimal Precio, int Stock, decimal Peso)[] ProductosOficiales =
     {
         ("P01", "Mouse USB", "Periféricos", "Mouse óptico con cable USB", 20.00m, 8, 0.20m),
@@ -39,7 +37,8 @@ public sealed class InicializadorBaseDatos : IInicializadorBaseDatos
         ("P05", "Alfombrilla", "Accesorios", "Alfombrilla para mouse", 5.00m, 30, 0.10m)
     };
 
-    /// <summary>Cuentas de DEMOSTRACIÓN (ficticias, documentadas en el README). Solo se guarda su hash.</summary>
+    //cuentas de DEMOSTRACION (ficticias, documentadas en el README)
+    //solo se guarda su hash
     public static readonly (string Usuario, string Nombre, Rol Rol, string Clave)[] UsuariosDemo =
     {
         ("admin", "Administrador Demo", Rol.ADMIN, "Admin123!"),
@@ -86,7 +85,7 @@ public sealed class InicializadorBaseDatos : IInicializadorBaseDatos
         }
         await _db.SaveChangesAsync(ct);
 
-        // Orden obligatorio: KIT_OFICINA existe antes de KIT_TELETRABAJO (que lo contiene).
+        //orden obligatorio: KIT_OFICINA existe antes de KIT_TELETRABAJO (que lo contiene)
         if (!await _db.Kits.AnyAsync(k => k.Codigo == "KIT_OFICINA", ct))
         {
             var oficina = Kit.Crear("KIT_OFICINA", "Kit Oficina");

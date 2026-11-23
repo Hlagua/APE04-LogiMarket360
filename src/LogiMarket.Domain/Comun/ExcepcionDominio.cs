@@ -1,6 +1,7 @@
 namespace LogiMarket.Domain.Comun;
 
-/// <summary>Violación de una invariante o regla de negocio. Lleva un código estable para pruebas y UI.</summary>
+//violacion de una invariante o regla de negocio
+//lleva un codigo estable para pruebas y UI
 public class ExcepcionDominio : Exception
 {
     public string Codigo { get; }

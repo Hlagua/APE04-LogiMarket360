@@ -3,7 +3,8 @@ using LogiMarket.Application.Seguridad;
 
 namespace LogiMarket.Infrastructure.Seguridad;
 
-/// <summary>Hash PBKDF2-SHA256 con sal aleatoria. Formato: PBKDF2$iteraciones$salBase64$hashBase64.</summary>
+//hash PBKDF2-SHA256 con sal aleatoria
+//formato: PBKDF2$iteraciones$salBase64$hashBase64
 public sealed class HasherContrasenaPbkdf2 : IHasherContrasena
 {
     private const int Iteraciones = 100_000;

@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 
 namespace LogiMarket.WinForms.Infraestructura;
 
-/// <summary>Componentes reutilizables y formato homogéneo de la interfaz (DRY).</summary>
+//componentes reutilizables y formato homogeneo de la interfaz (DRY)
 public static class Ui
 {
     public static readonly Font FuenteTitulo = new("Segoe UI Semibold", 13f);
@@ -57,7 +57,7 @@ public static class Ui
         return p;
     }
 
-    /// <summary>DataGridView de solo lectura con formato decimal consistente y selección de fila completa.</summary>
+    //DataGridView de solo lectura con formato decimal consistente y seleccion de fila completa
     public static DataGridView Grilla()
     {
         var g = new DataGridView
@@ -73,7 +73,7 @@ public static class Ui
             RowHeadersVisible = false,
             BackgroundColor = Color.White,
             BorderStyle = BorderStyle.FixedSingle,
-            StandardTab = true // TAB sale de la grilla (navegación por teclado)
+            StandardTab = true //TAB sale de la grilla (navegacion por teclado)
         };
         g.EnableHeadersVisualStyles = false;
         g.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(225, 233, 245);
@@ -83,9 +83,7 @@ public static class Ui
         return g;
     }
 
-    /// <summary>
-    /// Enlaza datos conservando la fila seleccionada (por el valor de la columna clave) y el desplazamiento.
-    /// </summary>
+    //enlaza datos conservando la fila seleccionada (por el valor de la columna clave) y el desplazamiento
     public static void Enlazar<T>(DataGridView grilla, IEnumerable<T> datos, string? columnaClave = null)
     {
         object? claveSeleccionada = null;
@@ -124,10 +122,8 @@ public static class Ui
         }
     }
 
-    /// <summary>
-    /// Divisor que fija la proporción cuando ya tiene tamaño real (asignar SplitterDistance antes lanza
-    /// excepción en WinForms) y se adapta al redimensionar la ventana.
-    /// </summary>
+    //divisor que fija la proporcion cuando ya tiene tamaño real (asignar SplitterDistance antes lanza
+    //excepcion en WinForms) y se adapta al redimensionar la ventana
     public static SplitContainer Division(Orientation orientacion, double proporcion)
     {
         var s = new SplitContainer { Orientation = orientacion, Dock = DockStyle.Fill };
@@ -142,7 +138,7 @@ public static class Ui
         return s;
     }
 
-    /// <summary>Hace que una etiqueta larga se ajuste al ancho de la vista en lugar de cortarse.</summary>
+    //hace que una etiqueta larga se ajuste al ancho de la vista en lugar de cortarse
     public static Label Ajustable(Label etiqueta, Control vista)
     {
         etiqueta.AutoSize = true;
@@ -155,7 +151,7 @@ public static class Ui
 
     public static string Usd(decimal valor) => "USD " + valor.ToString("0.00", CultureInfo.InvariantCulture);
 
-    /// <summary>Contenedor estándar de una vista: título + barra + contenido que se ajusta al tamaño.</summary>
+    //contenedor estandar de una vista: titulo + barra + contenido que se ajusta al tamaño
     public static TableLayoutPanel Layout(string titulo, params Control[] filas)
     {
         var t = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, Padding = new Padding(10), BackColor = ColorFondo };

@@ -18,12 +18,15 @@ using LogiMarket.Domain.Pedidos;
 
 namespace LogiMarket.Application.Contratos;
 
-// Contratos de los casos de uso y colaboradores (DIP): la presentación, los comandos y los demás servicios
-// dependen de estas abstracciones, nunca de las clases concretas. Interfaces pequeñas por responsabilidad (ISP).
+//contratos de los casos de uso y colaboradores (DIP):
+//la presentacion, los comandos y los demas servicios
+//dependen de estas abstracciones, nunca de las clases concretas
+//interfaces pequeñas por responsabilidad (ISP)
 
-// ======================= LADO DE LECTURA (Query) =======================
+//======================= LADO DE LECTURA (Query) =======================
 
-/// <summary>Todas las consultas de la aplicación. Ninguna modifica datos (CQRS básico).</summary>
+//todas las consultas de la aplicacion
+//ninguna modifica datos (CQRS basico)
 public interface IServicioConsultas
 {
     Task<IReadOnlyList<ProductoDto>> ProductosAsync(string? texto = null, CancellationToken ct = default);
@@ -45,7 +48,7 @@ public interface IServicioConsultas
     InstantaneaMetricas Metricas();
 }
 
-/// <summary>Reportes de solo lectura: filtro (Interpreter), comprobantes (Bridge) y vista masiva (Flyweight).</summary>
+//reportes de solo lectura: filtro (Interpreter), comprobantes (Bridge) y vista masiva (Flyweight)
 public interface IServicioReportes
 {
     IEnumerable<string> MediosDisponibles { get; }
@@ -54,7 +57,7 @@ public interface IServicioReportes
     Task<(IReadOnlyList<FilaCatalogoVisual> Filas, MedicionFlyweight Medicion)> VistaMasivaAsync(int filas = 1000, CancellationToken ct = default);
 }
 
-// ======================= LADO DE ESCRITURA (Command) =======================
+//======================= LADO DE ESCRITURA (Command) =======================
 
 public interface IServicioAutenticacion
 {
@@ -90,7 +93,7 @@ public interface IServicioPedidos
     Task<ResultadoOperacion<int>> ClonarComoBorradorAsync(int pedidoId, CancellationToken ct = default);
 }
 
-/// <summary>Facade de confirmación (una sola operación).</summary>
+//facade de confirmacion (una sola operacion)
 public interface IConfirmacionPedido
 {
     Task<ResultadoConfirmacion> ConfirmarAsync(int pedidoId, string claveIdempotencia, CancellationToken ct = default);
@@ -107,7 +110,7 @@ public interface IServicioDevoluciones
     Task<ResultadoDevolucion> SolicitarAsync(SolicitudDevolucion solicitud, CancellationToken ct = default);
 }
 
-/// <summary>Operaciones de la pantalla de demostración (solo ADMIN).</summary>
+//operaciones de la pantalla de demostracion (solo ADMIN)
 public interface IServicioAdministracion
 {
     ConfiguracionDemo ConfiguracionActual { get; }
@@ -122,7 +125,7 @@ public interface IInvocadorComandos
     Task<ResultadoOperacion> EjecutarAsync(IComando comando, CancellationToken ct = default);
 }
 
-// ======================= COLABORADORES INTERNOS =======================
+//======================= COLABORADORES INTERNOS =======================
 
 public interface IServicioValoracion
 {
@@ -146,7 +149,7 @@ public interface IProcesadorOutbox
     Task<ResultadoProcesoOutbox> ProcesarSinPropagarAsync(CancellationToken ct = default);
 }
 
-/// <summary>Sujeto del Observer.</summary>
+//sujeto del Observer
 public interface IPublicadorEventos
 {
     IReadOnlyList<string> Suscriptores { get; }
@@ -161,7 +164,7 @@ public interface ISelectorCanalNotificacion
     CreadorNotificador Actual { get; }
 }
 
-/// <summary>Fábrica Flyweight de metadatos de SKU.</summary>
+//fabrica Flyweight de metadatos de SKU
 public interface IFabricaMetadatosSku
 {
     int InstanciasCreadas { get; }

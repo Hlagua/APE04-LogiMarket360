@@ -9,10 +9,9 @@ using LogiMarket.Domain.Comun;
 
 namespace LogiMarket.Application.Consultas;
 
-/// <summary>
-/// LADO DE LECTURA (CQRS básico): reúne todas las consultas. Solo lee mediante <see cref="IConsultasLectura"/>
-/// (AsNoTracking) y nunca guarda cambios. Los servicios de comando no exponen consultas.
-/// </summary>
+//LADO DE LECTURA (CQRS basico): reune todas las consultas
+//solo lee mediante IConsultasLectura (AsNoTracking) y nunca guarda cambios
+//los servicios de comando no exponen consultas
 public sealed class ServicioConsultas : IServicioConsultas
 {
     private readonly IConsultasLectura _lectura;
@@ -31,7 +30,7 @@ public sealed class ServicioConsultas : IServicioConsultas
         _invocador = invocador;
     }
 
-    // ---------------- Catálogo ----------------
+    //catalogo
 
     public Task<IReadOnlyList<ProductoDto>> ProductosAsync(string? texto = null, CancellationToken ct = default)
     {
@@ -75,7 +74,7 @@ public sealed class ServicioConsultas : IServicioConsultas
         return lista;
     }
 
-    /// <summary>Elemento del Composite (instantánea de precios y composición) para agregar al carrito.</summary>
+    //elemento del Composite (instantanea de precios y composicion) para agregar al carrito
     public async Task<IElementoCatalogo> ElementoAsync(string codigo, CancellationToken ct = default)
     {
         _autorizacion.Exigir(Operacion.ConsultarInformacion);
@@ -83,7 +82,7 @@ public sealed class ServicioConsultas : IServicioConsultas
         return new ArbolCatalogo(catalogo.Productos, catalogo.Kits).Obtener(codigo);
     }
 
-    /// <summary>Recorre un elemento con el Iterator y con los dos Visitors.</summary>
+    //recorre un elemento con el Iterator y con los dos Visitors
     public async Task<DesgloseDto> DesgloseAsync(string codigo, CancellationToken ct = default)
     {
         var elemento = await ElementoAsync(codigo, ct);
@@ -95,11 +94,11 @@ public sealed class ServicioConsultas : IServicioConsultas
             desglose.Lineas, desglose.KitsVisitados, peso.Resumen);
     }
 
-    /// <summary>Unidades vendibles de un elemento según el stock de sus SKU finales (usa el Iterator).</summary>
+    //unidades vendibles de un elemento segun el stock de sus SKU finales (usa el Iterator)
     private static int UnidadesVendibles(IElementoCatalogo elemento, IReadOnlyDictionary<string, int> stock) =>
         elemento.ExpandirSkus().Select(kv => stock.GetValueOrDefault(kv.Key) / kv.Value).DefaultIfEmpty(0).Min();
 
-    // ---------------- Clientes ----------------
+    //clientes
 
     public Task<IReadOnlyList<ClienteDto>> ClientesAsync(string? texto = null, CancellationToken ct = default)
     {
@@ -113,7 +112,7 @@ public sealed class ServicioConsultas : IServicioConsultas
         return await _lectura.ClienteAsync(id, ct) ?? throw new ExcepcionAplicacion("CLIENTE_NO_EXISTE", $"No existe el cliente {id}.");
     }
 
-    // ---------------- Pedidos y logística ----------------
+    //pedidos y logistica
 
     public Task<IReadOnlyList<PedidoResumenDto>> PedidosAsync(CancellationToken ct = default)
     {
@@ -139,7 +138,7 @@ public sealed class ServicioConsultas : IServicioConsultas
             : $"Guía {despacho.NumeroGuia} (PED-{despacho.PedidoId:000000}): {despacho.Seguimiento}";
     }
 
-    // ---------------- Operación y auditoría ----------------
+    //operacion y auditoria
 
     public Task<IndicadoresDto> IndicadoresAsync(CancellationToken ct = default)
     {

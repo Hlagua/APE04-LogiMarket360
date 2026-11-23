@@ -6,11 +6,11 @@ namespace LogiMarket.Application.Eventos;
 
 public sealed record ResultadoProcesoOutbox(int Procesados, int Fallidos, IReadOnlyList<string> Detalle);
 
-/// <summary>
-/// Procesa los eventos pendientes DESPUÉS de confirmar la transacción de negocio: los publica a los
-/// observadores y los marca procesados. Si un observador falla, el evento queda pendiente (con intentos y
-/// error) y se recupera en una ejecución posterior. Un candado global evita el procesamiento duplicado.
-/// </summary>
+//procesa los eventos pendientes DESPUES de confirmar la transaccion de negocio:
+//los publica a los observadores y los marca procesados
+//si un observador falla
+//el evento queda pendiente (con intentos y error) y se recupera en una ejecucion posterior
+//un candado global evita el procesamiento duplicado
 public sealed class ProcesadorOutbox : IProcesadorOutbox
 {
     private static readonly SemaphoreSlim Candado = new(1, 1);
@@ -40,7 +40,7 @@ public sealed class ProcesadorOutbox : IProcesadorOutbox
             var pendientes = (await _outbox.PendientesAsync(maximo, ct)).Select(e => e.Id).ToList();
             foreach (var id in pendientes)
             {
-                // Se recarga cada evento: tras un fallo anterior el contexto pudo haberse limpiado.
+                //se recarga cada evento: tras un fallo anterior el contexto pudo haberse limpiado
                 var registro = await _outbox.ObtenerAsync(id, ct);
                 if (registro is null || registro.Procesado) continue;
                 try
@@ -72,7 +72,7 @@ public sealed class ProcesadorOutbox : IProcesadorOutbox
         }
     }
 
-    /// <summary>Versión que nunca propaga errores (se usa justo después de confirmar una operación).</summary>
+    //version que nunca propaga errores (se usa justo despues de confirmar una operacion)
     public async Task<ResultadoProcesoOutbox> ProcesarSinPropagarAsync(CancellationToken ct = default)
     {
         try

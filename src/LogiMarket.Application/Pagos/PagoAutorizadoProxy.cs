@@ -5,11 +5,13 @@ using LogiMarket.Application.Seguridad;
 
 namespace LogiMarket.Application.Pagos;
 
-/// <summary>
-/// Patrón Proxy de protección: verifica el rol (VENTAS/ADMIN) ANTES de delegar. Si se deniega, no se
-/// invoca al Decorator ni a la pasarela y por tanto no hay LOG de cobro; solo un registro de SEGURIDAD.
-/// Funciona sin WinForms (la política vive en Application).
-/// </summary>
+//patron proxy (estructural)
+//clase PagoAutorizadoProxy
+//tipo: proxy de proteccion
+//objetivo: verifica el rol (VENTAS/ADMIN) ANTES de delegar
+//si se deniega, no se invoca al Decorator ni a la pasarela y por tanto no hay LOG de cobro
+//solo un registro de SEGURIDAD
+//funciona sin WinForms (la politica vive en Application)
 public sealed class PagoAutorizadoProxy : IPasarelaPago
 {
     private readonly IPasarelaPago _real;

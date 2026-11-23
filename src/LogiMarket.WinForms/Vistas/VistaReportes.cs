@@ -5,7 +5,9 @@ using LogiMarket.Application.Contratos;
 
 namespace LogiMarket.WinForms.Vistas;
 
-/// <summary>11. Reportes y comprobantes: filtro (Interpreter), comprobante × medio (Bridge) y vista masiva (Flyweight).</summary>
+//11
+//reportes y comprobantes:
+//filtro (Interpreter), comprobante x medio (Bridge) y vista masiva (Flyweight)
 public sealed class VistaReportes : VistaBase
 {
     private readonly TextBox _filtro = Ui.Texto(380, "ESTADO = PAGADO AND TOTAL >= 50");
