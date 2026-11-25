@@ -491,3 +491,6 @@ logs/
 
 # Enunciado del docente (no se publica)
 GUIA_APE_04.docx
+
+# informe y paquete de entrega (no se publican)
+/entrega/

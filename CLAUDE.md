@@ -7,7 +7,8 @@ patrones GoF integrados. Enunciado completo: `GUIA_APE_04.docx`. Responder siemp
 
 1. Leer `docs/BITACORA_DECISIONES.md` (decisiones vigentes y por qué) y `docs/MATRIZ_PATRONES.md` (dónde vive cada patrón).
 2. Al terminar un cambio: agregar una entrada fechada en la bitácora y actualizar la matriz si cambia un patrón.
-3. El informe PDF NO se hace hasta que el usuario apruebe el sistema completo.
+3. El informe y el ZIP ya están en `entrega/` (fuera de git). Si cambia el código, regenerar capturas, informe y
+   ZIP con los scripts de `entrega/herramientas` y `scripts/empaquetar.ps1` (ver `entrega/ESTADO_INFORME.md`).
 
 ## Reglas que no se pueden romper (guía APE 04)
 

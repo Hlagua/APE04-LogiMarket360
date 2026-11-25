@@ -17,7 +17,7 @@ LogiMarket360.sln
 ├─ src/LogiMarket.Domain          → sin referencias (entidades, invariantes, State, Composite, Strategy…)
 ├─ src/LogiMarket.Application     → Domain (casos de uso, puertos, DTO, validación, orquestación)
 ├─ src/LogiMarket.Infrastructure  → Application + Domain (EF Core/SQLite, repositorios, adaptadores, Outbox)
-├─ src/LogiMarket.WinForms        → Application + Infrastructure (solo para registrar DI en Program.cs)
+├─ src/LogiMarket.WinForms        → Application + Domain (tipos) + Infrastructure (solo para registrar DI en Program.cs)
 └─ tests/LogiMarket.Tests         → Domain + Application + Infrastructure (xUnit)
 ```
 
@@ -55,6 +55,7 @@ dotnet ef database update -p src/LogiMarket.Infrastructure -s src/LogiMarket.Inf
 | consulta | Consulta123! | CONSULTA | solo lectura |
 
 En la base solo se guarda el **hash PBKDF2-SHA256** con sal. Son credenciales de demostración, no productivas.
+Para comprobar a mano un hash de la tabla `Usuario`: `./scripts/verificar-hash.ps1 -Clave 'Admin123!' -Hash '<valor de HashContrasena>'`.
 
 Clientes semilla: **Ana** (VIP), **Luis** (NORMAL), **Carmen** (MAYORISTA).
 
@@ -91,8 +92,8 @@ cada cambio queda en la bitácora (categoría DEMO).
 ./scripts/empaquetar.ps1 -Nombre "APELLIDOS_NOMBRES"
 ```
 
-Genera `APE04_LogiMarket360_<Nombre>.zip` sin `bin/`, `obj/`, `.vs/`, bases `.db`, `logs/`, `salidas/`, el enunciado
-(`GUIA_APE_04.docx`), `CLAUDE.md` ni un `appsettings.json` local.
+Genera `APE04_LogiMarket360_<Nombre>.zip` sin `bin/`, `obj/`, `.vs/`, bases `.db`, `logs/`, `salidas/`, `entrega/`
+(informe y evidencias), el enunciado (`GUIA_APE_04.docx`), `CLAUDE.md` ni un `appsettings.json` local.
 
 ## Documentación técnica
 

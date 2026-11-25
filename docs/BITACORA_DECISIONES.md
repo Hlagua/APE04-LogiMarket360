@@ -13,6 +13,29 @@ Sirve de fuente para el informe final (que se elaborará cuando se apruebe el si
 - Git: un commit por iteración, solo a nombre del usuario.
 - Pendiente: recorrido manual de la interfaz por el usuario e informe PDF (al final).
 
+## 2026-11-24 — Informe y paquete de entrega
+
+El usuario aprobó pasar al informe. Se generaron en `entrega/`, carpeta que queda fuera de git y del ZIP:
+
+- `APE04_Informe_LAGUA_FLORES_HENRY_DANIEL.docx` / `.pdf` (50 páginas). Se armó sobre la plantilla de la guía:
+  portada, 2.1–2.12 y los 16 apartados del orden obligatorio.
+- 62 capturas reales. Las generó un arnés que usa FormLogin y FormPrincipal con una base nueva. El arnés y los
+  scripts del informe y de los diagramas están en `entrega/herramientas/`.
+- `APE04_LogiMarket360_LAGUA_FLORES_HENRY_DANIEL.zip`. Se verificó desde una carpeta limpia: compila con
+  0 advertencias y pasan las 59 pruebas.
+
+Cambios en el repositorio:
+
+| Cambio | Motivo |
+|---|---|
+| `.gitignore` excluye `/entrega/`, anclado a la raíz | Sin el ancla, la regla también coincidía con `src/LogiMarket.Application/Entrega` (la comparación no distingue mayúsculas) |
+| `scripts/empaquetar.ps1` excluye `entrega/` solo en la raíz | En la primera prueba el ZIP salió sin `Application/Entrega` y no compilaba; se detectó al compilarlo desde cero |
+| `scripts/verificar-hash.ps1` y una línea en el README | Comprobar a mano el hash PBKDF2 de un usuario |
+| README: WinForms también referencia Domain (tipos) | Coincide con el .csproj real |
+
+Datos de la portada tomados de la APE 03, pendientes de confirmar con el usuario: Quinto “A” SW e
+Ing. Javier Vargas, Mg.
+
 ## 2026-11-23 — Estilo de comentarios
 
 Se cambió la forma de comentar todo el código (src y tests) al estilo de los proyectos propios de Unidad 2:
